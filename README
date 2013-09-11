@@ -12,9 +12,9 @@ nxgipd daemon process is meant to continuously monitor the alarm panel and
 log any activity into local log file and/or to syslog. nxstat program can
 be used to query panel status in real-time.
 
-NOTE! Before you can use this program you need typically need to install 
+NOTE! Before you can use this program you typically need to first install 
 NX-584E (home automation) module or enable built-in serial port (NX-8E panel).
-If you don't know the program code (PIN) for your panel you may need to get
+If you don't know the program code (PIN) for your panel, you may need to get
 your alarm provider to do this for you.
 
 
@@ -41,8 +41,8 @@ INSTALLATION
 	tar file, run configure,  make necessary changes to the Makefile,  
 	and then compile the program. You may want do something like this:
 
-		tar xzvf nxgipd-1.0.0.tar.g
-		cd nxgipd-1.0.0
+		tar xzvf nxgipd-0.9.0.tar.g
+		cd nxgipd-0.9.0
 		./configure
 		make
 		make strip
