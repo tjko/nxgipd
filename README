@@ -1,0 +1,104 @@
+
+nxgipd v0.9.0
+=============
+
+nxgipd is a monitoring daemon for UTC / GE Interlogix / Caddx alarm systems
+that use the Networx NX-584 protocol.
+
+Daemon process requires very minimal memory and cpu resource making it suitable
+to be run in on almost any hardware that runs Linux (or feel free to port 
+this to your favorite OS :-)
+nxgipd daemon process is meant to continuously monitor the alarm panel and
+log any activity into local log file and/or to syslog. nxstat program can
+be used to query panel status in real-time.
+
+NOTE! Before you can use this program you need typically need to install 
+NX-584E (home automation) module or enable built-in serial port (NX-8E panel).
+If you don't know the program code (PIN) for your panel you may need to get
+your alarm provider to do this for you.
+
+
+SUPPORTED ALARM PANEL MODELS
+
+	NX-8 
+	NX-8V2
+	NX-8E 
+
+	(other panels that use same "Networx NX-584 RS-232 Gateway
+	 Interface Protocol" might work fine as well...)
+
+
+REQUIREMENTS
+	Mini-XML library (libmxml) v2.6 or later version
+
+
+TESTED PLATFORMS
+	Linux (Debian)
+
+
+INSTALLATION
+	Installation should be very straightforward, just unpack the
+	tar file, run configure,  make necessary changes to the Makefile,  
+	and then compile the program. You may want do something like this:
+
+		tar xzvf nxgipd-1.0.0.tar.g
+		cd nxgipd-1.0.0
+		./configure
+		make
+		make strip
+		make install
+
+	Then copy included nxgipd.conf template to /etc/nxgipd.conf and update
+        it to match your setup.
+
+
+SERIAL INTERFACE CONFIGURATION
+
+       For this program to work, the NX-584 interface module (or the built-in 
+       serial port in NX-8E) must be configured first. For detailed 
+       instructions, how to do that see the corresponding installation manuals.
+
+       Recommended configuration settings:
+
+       - Protocol: ASCII
+
+       - Speed: 9600 Baud 
+
+       - Enabled Transision Messages:
+       	 	 * Interface Configuration
+		 * Zone Status Message
+		 * Partition Status Message
+		 * System Status Message
+		 * Log Event Message
+
+	- Enabled Commands:
+       	 	 * Interface Configuration Request
+		 * Zone Name Request
+		 * Zone Status Request
+		 * Zones Snapshot Request
+		 * Partition Status Request
+		 * PArtitions Snapshot Request
+		 * System Status Request
+		 * Program Data Request (OPTIONAL)
+		 * Set Clock / Calendar Command (OPTIONAL)
+		 * Secondary Keypad Function (OPTIONAL)
+		 
+
+
+HISTORY
+	v0.9.0 - first public release
+
+
+
+LATEST VERSION
+
+	Latest version is always available from:
+		http://www.iki.fi/tjko/projects.html
+
+	Sources (GIT)
+		https://github.com/tjko/nxgipd
+
+
+Timo <tjko@iki.fi>
+08-Sep-2013  $Id$
+

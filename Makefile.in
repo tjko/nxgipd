@@ -1,0 +1,117 @@
+#########################################################################
+# $Id$ 
+# 
+# Makefile for nxgipd
+#
+
+Version = 0.9.0
+PKGNAME = nxgipd
+
+SHELL = /bin/sh
+
+DEFS = @DEFS@
+DEFS += -DVERSION=\"$(Version)\"
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+# Where to install the executables.
+bindir = $(exec_prefix)/bin
+
+# Where to install the system executables.
+sbindir = $(exec_prefix)/sbin
+
+# Where to put libraries
+libdir = $(prefix)/lib
+
+# Where to put the Info files
+infodir = $(prefix)/share/info
+
+# Where to put the manual pages.
+mandir = $(prefix)/share/man
+
+
+
+CC        = @CC@ 
+XCPPFLAGS = @CPPFLAGS@
+CFLAGS    = -Wall @CFLAGS@ $(XCPPFLAGS) $(DEFS)
+LDFLAGS   = @LDFLAGS@
+LIBS      = @LIBS@
+
+# link against shared libmxml
+#LIBS = -lmxml
+# link against static libmxml
+#LIBS = -Wl,-Bstatic -lmxml -Wl,-Bdynamic -lpthread
+
+STRIP     = strip
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+
+@SET_MAKE@
+
+# should be no reason to modify lines below this
+#########################################################################
+
+DIRNAME = $(shell basename `pwd`) 
+DISTNAME  = $(PKGNAME)-$(Version)
+
+OBJS = $(PKGNAME).o @GNUGETOPT@
+
+
+PROGS = $(PKGNAME) nxstat
+COMMON_OBJS = configuration.o misc.o
+NXSTAT_OBJS = nxstat.o nx-584.o $(COMMON_OBJS)
+OBJS = nx-584.o probe.o process.o $(PKGNAME).o $(COMMON_OBJS)
+
+all:	$(PROGS)
+
+$(PKGNAME):	$(OBJS)
+	$(CC) $(CFLAGS) -o $(PKGNAME) $(OBJS) $(LDFLAGS) $(LIBS)
+
+nxstat:	$(NXSTAT_OBJS)
+	$(CC) $(CFLAGS) -o nxstat $(NXSTAT_OBJS) $(LDFLAGS) $(LIBS)
+
+strip:
+	for i in $(PROGS) ; do [ -x $$i ] && $(STRIP) $$i ; done
+
+clean:
+	rm -f *~ *.o core a.out make.log \#*\# $(PROGS) *.o
+
+clean_all: clean
+	rm -f Makefile config.h config.log config.cache config.status
+
+dist:	clean_all
+	(cd .. ; tar cvzf $(DISTNAME).tar.gz $(DIRNAME))
+
+backup:	dist
+
+archive:
+	git archive --format tar --prefix ${DISTNAME}/ -o ../${DISTNAME}.tar master
+	gzip -v -9 ../${DISTNAME}.tar
+
+
+install: all install.dirs install.man
+	$(INSTALL) -m 755 $(PKGNAME) $(INSTALL_ROOT)/$(sbindir)/$(PKGNAME)
+	$(INSTALL) -m 755 nxstat $(INSTALL_ROOT)/$(bindir)/nxstat
+
+printable.man:
+	groff -Tps -mandoc ./$(PKGNAME).1 >$(PKGNAME).ps
+	groff -Tascii -mandoc ./$(PKGNAME).1 | tee $(PKGNAME).prn | sed 's/.//g' >$(PKGNAME).txt
+
+install.man: install.dirs
+	$(INSTALL) -m 644 $(PKGNAME).1 $(INSTALL_ROOT)/$(mandir)/man1/$(PKGNAME).1
+	$(INSTALL) -m 644 nxstat.1 $(INSTALL_ROOT)/$(mandir)/man1/nxstat.1
+
+install.dirs:
+	$(INSTALL) -d -m 755 $(INSTALL_ROOT)/$(mandir)/man1
+	$(INSTALL) -d -m 755 $(INSTALL_ROOT)/$(bindir)
+	$(INSTALL) -d -m 755 $(INSTALL_ROOT)/$(sbindir)
+
+# a tradition !
+love:	
+	@echo "Not War - Eh?"
+# eof

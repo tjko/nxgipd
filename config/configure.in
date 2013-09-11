@@ -1,0 +1,66 @@
+dnl $Id$
+dnl 
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(nxgipd.c)
+AC_CONFIG_HEADER(config.h)
+AC_CONFIG_AUX_DIR(config)
+
+
+AC_CANONICAL_HOST
+HOST_TYPE=$host
+AC_DEFINE_UNQUOTED(HOST_TYPE,"$host")
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+
+
+AC_ARG_WITH(libmxml, [  --with-libmxml=DIR	  libmxml is installed in ],
+	[if test $withval != yes; then
+	   	nxgipd_cv_libmxml=$withval
+	fi
+	if test -d "${nxgipd_cv_libmxml}/lib"; then
+		LDFLAGS="-L${nxgipd_cv_libmxml}/lib $LDFLAGS"
+		CPPFLAGS="$CPPFLAGS -I${nxgipd_cv_libmxml}/include"	
+	else
+		LDFLAGS="-L${nxgipd_cv_libmxml} $LDFLAGS"
+		CPPFLAGS="$CPPFLAGS -I${nxgipd_cv_libmxml}"	
+	fi])
+	
+
+dnl Checks for libraries.
+
+AC_CHECK_LIB(mxml, mxmlLoadFile, ,[
+echo "Cannot find libmxml or you have too old version (2.6 or later required)."
+exit 1
+])
+
+dnl AC_CHECK_LIB(m, round)
+
+dnl Checks for header files.
+
+AC_HEADER_STDC
+AC_CHECK_HEADERS([unistd.h getopt.h errno.h time.h signal.h fcntl.h sys/ipc.h sys/shm.h],,AC_MSG_ERROR([Missing headers]))
+AC_CHECK_HEADERS(mxml.h,,AC_MSG_ERROR([Cannot find mxml.h  You need libmxml.]))
+
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(int)
+
+
+
+dnl Checks for library functions.
+AC_CHECK_FUNCS(getopt_long, break, [GNUGETOPT="getopt.o getopt1.o"])
+AC_SUBST(GNUGETOPT)
+
+dnl AC_CHECK_FUNCS(mkstemps)
+
+
+
+
+AC_OUTPUT(Makefile)
+
+dnl cp confdefs.h my_config.h

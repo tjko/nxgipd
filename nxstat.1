@@ -1,0 +1,89 @@
+.TH NXSTAT 1 "08 Sep 2013" 
+.UC 4 
+.SH NAME 
+nxstat \- display status of NX-8/NX-8V/NX-8E Alarm Panel.
+
+
+.SH SYNOPSIS 
+.B nxstat
+[ 
+.B options 
+]
+
+
+.SH DESCRIPTION 
+.I nxstat
+
+is a utlitiy to display "real-time" status of a alarm panel, that
+is being monitored by nxgipd daemon.
+
+By default nxstat shows detailed status of every partition configured on
+the alarm panel. It can also display status of every zone and when they 
+were last tripped.
+Additionally nxstat can be used to display the event log of the alarm
+panel.
+
+
+
+.SH OPTIONS
+.PP
+Options may be either the traditional POSIX one letter options, or the
+GNU style long options.  POSIX style options start with a single
+``\-'', while GNU long options start with ``\-\^\-''.
+
+Options offered by
+.I nxstat
+are the following:
+.TP 0.6i
+.B -c <configfile>, --conf=<configfile>
+Specifies the pathname of the configuration file. If not used program
+will look for
+.I /etc/nxstat.conf
+.TP 0.6i
+.B -h, --help
+Display short usage information and exit.
+.TP 0.6i
+.B -l, --log
+Display full event log from the panel. (Assumes that nxgipd was
+started with --log option).
+.TP 0.6i
+.B -l <n>, --log=<n>
+Display last 
+.I n
+entries of the panel event log.
+.TP 0.6i
+.B -v, --verbose
+Enable more verbose output to stdout (when not running as daemon).
+.TP 0.6i
+.B -V, --version
+Print program version and exit.
+.TP 0.6i
+.B -z, --zones
+Display short (format) zone status information.
+.TP 0.6i
+.B -Z, --zones-long
+Display long (format) zone status information.
+
+
+
+.SH "SEE ALSO" 
+nxgipd(1)
+
+.SH AUTHOR
+Timo Kokkonen <tjko@iki.fi>
+
+.SH COPYING
+Copyright (C) 2009-2013  Timo Kokkonen
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+ This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.

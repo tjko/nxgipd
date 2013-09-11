@@ -1,0 +1,112 @@
+.TH NXGIPD 1 "08 Sep 2013" 
+.UC 4 
+.SH NAME 
+nxgipd \- monitoring daemon for NX-8/NX-8V2/NX-8E Alarm Panels.
+
+
+.SH SYNOPSIS 
+.B nxgipd
+[ 
+.B options 
+]
+
+
+.SH DESCRIPTION 
+.I nxgipd
+
+nxgipd is a monitoring daemon for UTC / GE Interlogix / Caddx alarm systems
+that use the Networx NX-584 protocol.
+
+nxgipd daemon process is meant to continuously monitor the alarm panel and
+log any activity into local log file and/or to syslog. nxstat program can
+be used to query panel status in real-time.
+
+NOTE! Before you can use this program you need typically need to install 
+NX-584E (home automation) module or enable built-in serial port (NX-8E panel).
+If you don't know the program code (PIN) for your panel you may need to get
+your alarm company to do this for you.
+
+
+.SH OPTIONS
+.PP
+Options may be either the traditional POSIX one letter options, or the
+GNU style long options.  POSIX style options start with a single
+``\-'', while GNU long options start with ``\-\^\-''.
+
+Options offered by
+.I nxgipd
+are the following:
+.TP 0.6i
+.B -c <configfile>, --conf=<configfile>
+Specifies the pathname of the configuration file. If not used program
+will look for
+.I /etc/nxgipd.conf
+.TP 0.6i
+.B -p <pidfile>, --pid=<pidfile>
+Create pid file using given filename. Default is not to create a pid file.
+.TP 0.6i
+.B -d, --daemon
+Fork a background (daemon) process and exit. Default is to run daemon on foreground.
+.TP 0.6i
+.B -h, --help
+Display short usage information and exit.
+.TP 0.6i
+.B -l, --log
+During intialization download full event log from the panel.
+This will somewhat slowdown daemon initialization, but enables
+.Inxstat (1)
+command to display full event log from panel immediately after
+daemon process is fully running.
+.TP 0.6i
+.B -L, --log-only
+Dump panel event log (into log) and exit.
+.TP 0.6i
+.B --probe
+Probe panel device bus for expansion modules.
+Note, NX-584E module cannot probe itself, but this 
+should find any other modules that support programming.
+.TP 0.6i
+.B --scan=<module>
+Dump full programing (configuration) of specified module and exit.
+.B --scan=<module>,<loc>
+Dump only give program location (configuration) of specified module and exit.
+.TP 0.6i
+.B --status
+Display NX gateway status / settings. Can be used to indirectly see
+how the gateway is programmed.
+.TP 0.6i
+.B -v, --verbose
+Enable more verbose output to stdout (when not running as daemon).
+.TP 0.6i
+.B -V, --version
+Print program version and exit.
+
+
+
+.SH BUGS
+If 
+I. nxgipd
+crashed, you may sometimes need to manually remove IPC Share memory segment it uses,
+before you can restart the daemon.
+
+.SH "SEE ALSO" 
+nxstat(1)
+
+.SH AUTHOR
+Timo Kokkonen <tjko@iki.fi>
+
+.SH COPYING
+Copyright (C) 2009-2013  Timo Kokkonen
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+ This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
