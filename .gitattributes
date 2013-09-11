@@ -1,4 +1,5 @@
 *.c	ident
 *.in	ident
 README	ident
+Makefile.in ident
 

@@ -2,6 +2,7 @@
  * 
  * Copyright (C) 2009,2013 Timo Kokkonen. All Rights Reserved.
  *
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
