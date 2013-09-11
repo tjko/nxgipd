@@ -338,9 +338,13 @@ int main(int argc, char **argv)
   if (astat->last_updated > lastparttime)
     lastparttime=astat->last_updated;
 
-  printf("\n Last zone tripped: %s (%s)\n",
-	 timestampstr(astat->zones[lastzone].last_updated),
-	 astat->zones[lastzone].name);
+  if (astat->zones[lastzone].last_updated > shm->daemon_started) {
+    printf("\n Last zone tripped: %s (%s)\n",
+	   timestampstr(astat->zones[lastzone].last_updated),
+	   astat->zones[lastzone].name);
+  } else{
+    printf("\n Last zone tripped: n/a\n");
+  }
   printf("Last status change: %s\n",timestampstr(lastparttime));
   //printf(" Last status check: %s\n",timestampstr(astat->last_statuscheck));
   //printf("Last clock sync: %s\n",timestampstr(astat->last_timesync));
