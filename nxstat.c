@@ -49,7 +49,7 @@ const char *timedeltastr(time_t delta)
   uint d = (int)delta;
 
   if (delta < 60) {
-    snprintf(buf,sizeof(buf)-1,"    %0ds",d);
+    snprintf(buf,sizeof(buf)-1,"   %02ds",d);
   }
   else if (delta < 60*60){
     snprintf(buf,sizeof(buf)-1,"%02dm%02ds",(d/60),(d%60));
@@ -79,6 +79,7 @@ int main(int argc, char **argv)
   int lastzone = 0;
   time_t lastzonetime = 0;
   time_t lastparttime = 0;
+  time_t now;
 
   struct option long_options[] = {
     {"config",1,0,'c'},
@@ -275,6 +276,7 @@ int main(int argc, char **argv)
   }
 
   printf("\n");
+  now=time(NULL);
 
   if (zones_mode==1) {
     nx_zone_status_t *zn;
@@ -304,7 +306,6 @@ int main(int argc, char **argv)
   }
   else if (zones_mode==2) {
     nx_zone_status_t *zn;
-    time_t now = time(NULL);
     char tmp[16],tmp2[16];
 
     printf("Zone  Name              Mode      Status  Last Change\n"
@@ -339,17 +340,20 @@ int main(int argc, char **argv)
     lastparttime=astat->last_updated;
 
   if (astat->zones[lastzone].last_updated > shm->daemon_started) {
-    printf("\n Last zone tripped: %s (%s)\n",
+    printf("\n Last zone tripped: %s (%s ago) [%s]\n",
 	   timestampstr(astat->zones[lastzone].last_updated),
+	   timedeltastr(now - astat->zones[lastzone].last_updated),
 	   astat->zones[lastzone].name);
   } else{
     printf("\n Last zone tripped: n/a\n");
   }
-  printf("Last status change: %s\n",timestampstr(lastparttime));
+  printf("Last status change: %s (%s ago)\n",
+	 timestampstr(lastparttime),
+	 timedeltastr(now - lastparttime)
+	 );
+
   //printf(" Last status check: %s\n",timestampstr(astat->last_statuscheck));
   //printf("Last clock sync: %s\n",timestampstr(astat->last_timesync));
-
-
 
   return 0;
 }
