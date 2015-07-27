@@ -162,6 +162,8 @@ typedef struct nx_configuration {
 
   uint  shmkey;
   int   shmmode;
+  uint  msgkey;
+  int   msgmode;
 } nx_configuration_t;
 
 
@@ -175,6 +177,18 @@ typedef struct nx_shm {
   nx_system_status_t     alarmstatus;  
   time_t                 daemon_started;
 } nx_shm_t;
+
+
+#define NX_IPC_MSG_DATA_LEN   256
+typedef struct nx_ipc_msg {
+  uchar msgtype;
+  uchar data[NX_IPC_MSG_DATA_LEN];  
+} nx_ipc_msg_t;
+
+
+#define NX_IPC_MSG_CMD   0x01
+#define NX_IPC_MSG_PROG  0x02
+
 
 extern nx_configuration_t *config;
 extern char *program_name;
@@ -199,7 +213,7 @@ int probe_bus(int fd, int protocol);
 
 /* process.c */
 void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_status_t *astat, nx_interface_status_t *istatus);
-
+void process_command(int fd, int protocol, const uchar *data);
 
 #endif
 

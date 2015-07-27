@@ -420,6 +420,65 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
 
 
+void process_command(int fd, int protocol, const uchar *data)
+{
+  nxmsg_t msgout,msgin;
+  int func,ret,len,offset;
+  char *funcname = NULL;
+
+  if (!data) return;
+
+  //logmsg(0,"process_command: %02x,%02x,%02x",data[0],data[1],data[2]);
+  func=(data[0]<<8 | data[1]);
+
+  switch (func) {
+  case NX_KEYPAD_FUNC_STAY:
+    funcname="Stay (one button arm / toggle interiors)";
+    break;
+  case NX_KEYPAD_FUNC_CHIME:
+    funcname="Chime (toggle chime mode)";
+    break;
+  case NX_KEYPAD_FUNC_EXIT:
+    funcname="Exit (one button arm / toggle instant)";
+    break;
+  case NX_KEYPAD_FUNC_BYPASS:
+    funcname="Bypass interiors";
+    break;
+  default:
+    funcname=NULL;
+  }
+
+  if (!funcname) {
+    logmsg(0,"Invalid command message received: 0x%04x",func);
+    return;
+  }
+
+
+  msgout.msgnum=data[0];
+  if (data[0] == NX_PRI_KEYPAD_FUNC_PIN) {
+    len=6;
+    offset=3;
+    msgout.msg[0]=data[3]; // PIN digits 1&2
+    msgout.msg[1]=data[4]; // PIN digits 3&4
+    msgout.msg[2]=data[5]; // PIN digits 5&6
+  } else {
+    len=3;
+    offset=0;
+  }
+  msgout.len=len;
+  msgout.msg[offset]=data[1]; // keypad function
+  msgout.msg[offset+1]=data[2]; // partition mask
+
+  logmsg(3,"sending keypad function command: %s (partitions=0x%02x)",funcname,data[2]);
+
+  ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
+  if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
+    logmsg(1,"keypad function success (partitions=0x%02x): %s",data[2],funcname);
+  } else {
+    logmsg(1,"keypad function failed (partitions=0x%02x): %s",data[2],funcname);
+  }
+
+}
 
 
 /* eof :-) */

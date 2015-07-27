@@ -143,6 +143,16 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
   if (sscanf(node->value.text.string,"%o",&i)==1) config->shmmode=i;
   else die("invalid shm shmmode setting");
 
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msgkey");
+  if (!node) die("cannot find msgkey in configuration");
+  if (sscanf(node->value.text.string,"%x",&i)==1) config->msgkey=i;
+  else die("invalid shm msgkey setting");
+
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msgmode");
+  if (!node) die("cannot find msgmode in configuration");
+  if (sscanf(node->value.text.string,"%o",&i)==1) config->msgmode=i;
+  else die("invalid msgmode setting");
+
 
   config->syslog_mode=0;
   node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","syslog");

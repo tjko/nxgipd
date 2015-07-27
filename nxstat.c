@@ -32,6 +32,9 @@
 
 
 
+#define PRINT_SUP_FLAG(name,val,flag)  printf(" %40s: %s\n",name,(val & flag ? "Enabled" : "Disabled"))
+
+
 int verbose_mode = 0;
 
 nx_shm_t *shm = NULL;
@@ -80,10 +83,12 @@ int main(int argc, char **argv)
   time_t lastzonetime = 0;
   time_t lastparttime = 0;
   time_t now;
+  int interface_status = 0;
 
   struct option long_options[] = {
     {"config",1,0,'c'},
     {"help",0,0,'h'},
+    {"interface",0,0,'i'},
     {"log",2,0,'l'},
     {"verbose",0,0,'v'},
     {"version",0,0,'V'},
@@ -95,11 +100,15 @@ int main(int argc, char **argv)
 
   umask(022);
 
-  while ((opt=getopt_long(argc,argv,"vVhc:l::zZ",long_options,&opt_index)) != -1) {
+  while ((opt=getopt_long(argc,argv,"ivVhc:l::zZ",long_options,&opt_index)) != -1) {
     switch (opt) {
       
     case 'c':
       config_file=strdup(optarg);
+      break;
+
+    case 'i':
+      interface_status=1;
       break;
 
     case 'v':
@@ -139,6 +148,7 @@ int main(int argc, char **argv)
 	      "  --version, -V           print program version\n"
 	      "  --zones, -z             display short zone status info\n"
 	      "  --zones-long, -Z        display long zone status info\n"
+	      "  --interface, -i         display interface status\n"
 	      "\n");
       exit(1);
     }
@@ -159,6 +169,8 @@ int main(int argc, char **argv)
     if (errno==EINVAL) 
       fprintf(stderr,"Shared memory segment (key=%x) already exists with wrong size (?)\n",
 	      config->shmkey);
+    if (errno==ENOENT)
+      die("cannot find share memory segment (server not running?)");
     die("shmget() failed: %s (%d)\n",strerror(errno),errno);
   }
   shm = shmat(shmid,NULL,SHM_RDONLY);
@@ -204,6 +216,57 @@ int main(int argc, char **argv)
     }
   }
 
+
+
+  /* display alarm interface status */
+  if (interface_status) {
+    char *c = istatus->sup_cmd_msgs;
+    char *t = istatus->sup_trans_msgs;
+    printf("NX-584 Interface status\n\n");
+
+    printf(" %40s: %s\n","Firmware Version",istatus->version);
+
+    printf("Commands:\n");
+    PRINT_SUP_FLAG("Interface Configuration Request",c[0],0x02);
+    PRINT_SUP_FLAG("Zone Name Request",c[0],0x08);
+    PRINT_SUP_FLAG("Zone Status Request",c[0],0x10);
+    PRINT_SUP_FLAG("Zones Snapshot Request",c[0],0x20);
+    PRINT_SUP_FLAG("Partition Status Request",c[0],0x40);
+    PRINT_SUP_FLAG("Partitions Snapshot Request",c[0],0x80);
+    PRINT_SUP_FLAG("System Status Request",c[1],0x01);
+    PRINT_SUP_FLAG("Send X-10 Message",c[1],0x02);
+    PRINT_SUP_FLAG("Log Event Request",c[1],0x04);
+    PRINT_SUP_FLAG("Send Keypad Text Message",c[1],0x08);
+    PRINT_SUP_FLAG("Keypad Terminal Mode Request",c[1],0x10);
+    PRINT_SUP_FLAG("Program Data Request",c[2],0x01);
+    PRINT_SUP_FLAG("Program Data Command",c[2],0x02);
+    PRINT_SUP_FLAG("User Information Request (w/PIN)",c[2],0x04);
+    PRINT_SUP_FLAG("User Information Request (wo/PIN)",c[2],0x08);
+    PRINT_SUP_FLAG("Set User Code Command (w/PIN)",c[2],0x10);
+    PRINT_SUP_FLAG("Set User Code Command (wo/PIN)",c[2],0x20);
+    PRINT_SUP_FLAG("Set User Authorization Command (w/PIN)",c[2],0x40);
+    PRINT_SUP_FLAG("Set User Authorization Command (wo/PIN)",c[2],0x80);
+    PRINT_SUP_FLAG("Store Communication Even Command",c[3],0x04);
+    PRINT_SUP_FLAG("Set Clock / Calendar Command",c[3],0x08);
+    PRINT_SUP_FLAG("Primary Keypad Function (w/PIN)",c[3],0x10);
+    PRINT_SUP_FLAG("Primary Keypad Function (wo/PIN)",c[3],0x20);
+    PRINT_SUP_FLAG("Secondary Keypad Function",c[3],0x40);
+    PRINT_SUP_FLAG("Zone Bypass Toggle",c[3],0x80);
+    
+    printf("Transition Messages:\n");
+    PRINT_SUP_FLAG("Interface Configuration Message",t[0],0x02);
+    PRINT_SUP_FLAG("Zone Status Message",t[0],0x10);
+    PRINT_SUP_FLAG("Zones Snapshot Message",t[0],0x20);
+    PRINT_SUP_FLAG("Partition Status Message",t[0],0x40);
+    PRINT_SUP_FLAG("Partitions Snapshot Message",t[0],0x80);
+    PRINT_SUP_FLAG("System Status Message",t[1],0x01);
+    PRINT_SUP_FLAG("X-10 Message Received",t[1],0x02);
+    PRINT_SUP_FLAG("Log Event Message",t[1],0x04);
+    PRINT_SUP_FLAG("Keypad Message Received",t[1],0x04);
+
+    printf("\n");
+    return 0;
+  } 
 
 
   /* print panel event log ... */

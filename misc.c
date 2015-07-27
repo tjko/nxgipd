@@ -76,6 +76,9 @@ void logmsg(int priority, char *format, ...)
 
   // if (priority > debug_mode) return;
 
+  if (priority < 1)
+    fprintf(stderr,"%s\n",buf);
+
   if (priority <= config->syslog_mode) {
     openlog((program_name?program_name:PRGNAME),LOG_PID,LOG_USER);
     syslog((priority>0?LOG_INFO:LOG_NOTICE),"%s",buf);

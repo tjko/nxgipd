@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/msg.h>
 #include <fcntl.h>
 #if HAVE_GETOPT_H && HAVE_GETOPT_LONG
 #include <getopt.h>
@@ -38,6 +39,7 @@ int verbose_mode = 0;
 
 nx_shm_t *shm = NULL;
 int shmid = -1;
+int msgid = -1;
 nx_interface_status_t *istatus;
 nx_system_status_t *astat;
 nx_configuration_t configuration;
@@ -58,6 +60,8 @@ int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_statu
   }
 
 
+  logmsg(0,"Fetching log entries from alarm...");
+
   while (i < last) {
     msgout.msgnum=NX_LOG_EVENT_REQ;
     msgout.len=2;
@@ -69,7 +73,7 @@ int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_statu
       printf("."); 
       fflush(stdout);
     } else {
-      fprintf(stderr,"failed to get log entry: %d",i);
+      logmsg(0,"failed to get log entry: %d",i);
     } 
     i++;
   }
@@ -126,6 +130,7 @@ int get_system_status(int fd, int protocol)
 
 
   /* get partition statuses */
+  logmsg(0,"Querying partition statuses...");
   msgout.msgnum=NX_PART_SNAPSHOT_REQ;
   msgout.len=1;
   ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PART_SNAPSHOT_MSG,&msgin);
@@ -147,6 +152,7 @@ int get_system_status(int fd, int protocol)
  
   /* get zone info & names */
   astat->last_zone=((config->zones > 0 && config->zones <= NX_ZONES_MAX) ? config->zones : 48);
+  logmsg(0,"Querying zone names and statuses...");
 
   for (i=0;i<astat->last_zone;i++) {
     astat->zones[i].valid=1;
@@ -181,15 +187,12 @@ int get_system_status(int fd, int protocol)
 
 
   for (i=0;i<astat->last_zone;i++) {
-    printf("Zone %2d %16s %10s %8s\n",i+1,astat->zones[i].name,
-	   (astat->zones[i].bypass?"Bypassed":"Active"),(astat->zones[i].fault?"Fault":"OK"));
     logmsg(1,"Zone %2d %16s %10s %8s %s",i+1,
 	   astat->zones[i].name,
 	   (astat->zones[i].bypass?"Bypassed":"Active"),
 	   (astat->zones[i].fault?"Fault":"OK"),
 	   (astat->zones[i].last_updated > 0 ? timestampstr(astat->zones[i].last_updated):"n/a")
 	   );
-
   }
 
     
@@ -204,10 +207,12 @@ int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_s
   void *seg;
   
 
+  /* initialize IPC shared memory segment */
+
   id = shmget(shmkey,size,(shmmode & 0x1ff)|IPC_CREAT|IPC_EXCL);
 #if 0
   if (id < 0 && errno==EEXIST) {
-    fprintf(stderr,"Shared memory segment (key=%x) already exists\n",shmkey);
+    logmsg(0,"Shared memory segment (key=%x) already exists",shmkey);
     id = shmget(shmkey,1,0);
     if (id >= 0) {
       fprintf(stderr,"Trying to remove existing shared memory segment...\n");
@@ -219,13 +224,13 @@ int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_s
 
   if (id < 0) {
     if (errno==EEXIST) {
-      fprintf(stderr,"Shared memory segment (key=%x) already exists\n",shmkey);
-      fprintf(stderr,"Another instance still running?\n");
+      logmsg(0,"Shared memory segment (key=%x) already exists",shmkey);
+      logmsg(0,"Another instance still running?");
     }
     else if (errno==EINVAL) 
-      fprintf(stderr,"Shared memory segment (key=%x) already exists with wrong size (?)\n",shmkey);
+      logmsg(0,"Shared memory segment (key=%x) already exists with wrong size (?)\n",shmkey);
     else
-      fprintf(stderr,"shmget() failed: %s (%d)\n",strerror(errno),errno);
+      logmsg(0,"shmget() failed: %s (%d)\n",strerror(errno),errno);
     return -1; 
   }
   *shmidptr=id;
@@ -240,25 +245,88 @@ int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_s
   strncpy((*shmptr)->shmversion,SHMVERSION,sizeof((*shmptr)->shmversion));
   (*shmptr)->pid=getpid();
   (*shmptr)->last_updated=0;
+
+
+  /* initialize IPC message queue */
+     
+
   return 0;
 }
+
+
+int init_message_queue(int msgkey, int msgmode)
+{
+  int id = msgget(msgkey,((msgmode&0777)|IPC_CREAT|IPC_EXCL));
+  
+  if (id < 0) {
+    if (errno==EEXIST) {
+      logmsg(0,"Shared memory segment (key=%x) already exists",msgkey);
+      logmsg(0,"Another instance already running?");
+    } else {
+      logmsg(0,"msgget() failed: %d (%s)\n", errno, strerror(errno));
+    }
+  }
+
+  return id;
+}
+
 
 
 void release_shared_memory(int shmid, void *shmseg)
 {
   if (shmseg != NULL) {
     if (shmdt(shmseg) < 0)
-      fprintf(stderr,"shmdt() failed: %s errno=%d\n",strerror(errno),errno);
+      logmsg(0,"shmdt() failed: %s errno=%d\n",strerror(errno),errno);
   }
 
   if (shmctl(shmid,IPC_RMID,NULL) < 0)
-    fprintf(stderr,"failed to delete shmid (%d): %s (errno=%d)\n",shmid,strerror(errno),errno);
+    logmsg(0,"failed to delete shmid (%x): %s (errno=%d)\n",shmid,strerror(errno),errno);
+}
+
+void release_message_queue(int msgid)
+{
+  if (msgid < 0) return;
+  
+  if (msgctl(msgid,IPC_RMID,NULL) < 0) {
+    logmsg(0,"failed to delete message queue (%x): %s (errno=%d)\n",msgid,strerror(errno),errno);
+  }
+  msgid=-1;
+}
+
+
+int read_message_queue(int msgid, nx_ipc_msg_t *msg)
+{
+  ssize_t r;
+
+  if (msgid < 0 || !msg) return -1;
+
+  /* read next message from the queue */
+  r = msgrcv(msgid,msg,sizeof(nx_ipc_msg_t),0,IPC_NOWAIT);
+
+  if (r < 0) {
+    if (errno==ENOMSG) {
+      return 0;
+    }
+    else if (errno==EINTR) {
+      logmsg(1,"msgrcv() interrupted");
+      return 0;
+    }
+
+    logmsg(0,"failed to read message queue: %s (errno=%d)",strerror(errno),errno);
+    return -2;
+  }
+
+  if (r != sizeof(nx_ipc_msg_t)) {
+    logmsg(0,"received invalid size message: %ld (expected size %ld)",r,sizeof(nx_ipc_msg_t));
+    return -3;
+  }
+ 
+  return r;
 }
 
 
 void signal_handler(int sig)
 {
-  fprintf(stderr,"program terminated (%d)\n",sig);
   logmsg(0,"program terminated (%d)",sig);
   exit(1);
 }
@@ -275,6 +343,8 @@ void exit_cleanup()
 
   if (shm != NULL) 
     release_shared_memory(shmid,shm);
+  if (msgid >= 0) 
+    release_message_queue(msgid);
 }
 
 
@@ -307,7 +377,10 @@ int main(int argc, char **argv)
     {"version",0,0,'V'},
     {NULL,0,0,0}
   };
+  nx_ipc_msg_t  ipcmsg;
 
+  config->syslog_mode=0;
+  config->debug_mode=0;
 
   umask(022);
 
@@ -396,6 +469,7 @@ int main(int argc, char **argv)
   }
 
 
+
   /* setup signal handling */
   sigact.sa_handler=signal_handler;
   sigemptyset(&sigact.sa_mask);
@@ -405,13 +479,20 @@ int main(int argc, char **argv)
   sigact.sa_handler=SIG_IGN;
   sigaction(SIGHUP,&sigact,NULL);
 
+
   atexit(exit_cleanup);
+
 
   /* initialize shared memory segment */
   if (init_shared_memory(config->shmkey,config->shmmode,sizeof(nx_shm_t),&shmid,&shm))
     die("failed to initialize IPC shared memory segment");
   istatus=&shm->intstatus;
   astat=&shm->alarmstatus;
+  logmsg(2,"IPC shm: key=0x%08x id=%d",config->shmkey,shmid);
+
+  if ((msgid=init_message_queue(config->msgkey,config->msgmode)) < 0) 
+    die("failed to initialize IPC message queue");
+  logmsg(2,"IPC msg: key=0x%08x id=%d",config->msgkey,msgid); 
 
 
 
@@ -433,8 +514,8 @@ int main(int argc, char **argv)
   retry=0;
   do {
     ret=nx_send_message(fd,config->serial_protocol,&msgout,5,2,NX_INT_CONFIG_MSG,&msgin);
-    if (ret < 0) printf("Failed to send message\n");
-    if (ret == 0) printf("No response from NX device\n");
+    if (ret < 0) logmsg(0,"Failed to send message\n");
+    if (ret == 0) logmsg(0,"No response from NX device\n");
   } while (ret != 1 && retry++ < 3);
   if (ret == 1) {
     if (msgin.msgnum != NX_INT_CONFIG_MSG) die("NX device refused the command\n");
@@ -501,7 +582,7 @@ int main(int argc, char **argv)
   }
 
 
-  logmsg(0,"program started");
+  logmsg(0,"program started (version=%s)", VERSION);
   logmsg(1,"NX interface version v%s detected",istatus->version);
 
   if (log_mode > 0) {
@@ -511,7 +592,7 @@ int main(int argc, char **argv)
   }
 
 
-  printf("Getting system status...");
+  logmsg(0,"Getting system status...");
   retry=0;
   while (1) {
     ret=get_system_status(fd,config->serial_protocol);
@@ -527,19 +608,17 @@ int main(int argc, char **argv)
 
 
 
-  printf("Waiting for messages...\n");
-  logmsg(0,"waiting for messages");
+  logmsg(0,"Waiting for messages");
   shm->daemon_started=time(NULL);
   shm->last_updated=time(NULL);
 
+  /* main process loop */
   while (1) {
     ret=nx_receive_message(fd,config->serial_protocol,&msgin,3);
     if (ret < -1) {
-      printf("error reading message\n");
-      logmsg(1,"error reading message");
+      logmsg(0,"error reading message");
     } else if (ret == -1) {
-      printf("invalid message received\n");
-      logmsg(1,"invalid message received");
+      logmsg(0,"invalid message received");
     } else if (ret == 1) {
       if (verbose_mode) printf("got message %02x!\n",msgin.msgnum & NX_MSG_MASK);
       //logmsg(3,"got message %02x",msgin.msgnum & NX_MSG_MASK);
@@ -549,6 +628,8 @@ int main(int argc, char **argv)
 
       time_t t = time(NULL);
 
+
+      /* periodially check that panel is responding... */
       if (astat->last_statuscheck + (astat->statuscheck_interval*60) < t) {
 	msgout.msgnum=NX_SYS_STATUS_REQ;
 	msgout.len=1;
@@ -558,13 +639,13 @@ int main(int argc, char **argv)
 	  logmsg(1,"panel ok");
 	  shm->comm_fail=0;
 	} else {
-	  fprintf(stderr,"%s: failure to communicate with panel!\n",nx_timestampstr(t));
 	  logmsg(0,"failure to communicate with panel!");
 	  shm->comm_fail=1;
 	}
 	astat->last_statuscheck=t;
       }
 
+      /* update panel clock, if its time... */
       if ( (astat->timesync_interval > 0) && 
 	   (astat->last_timesync + (astat->timesync_interval*3600) < t) ) {
 	struct tm tt;
@@ -589,6 +670,26 @@ int main(int argc, char **argv)
 	}
 	astat->last_timesync=t;
       }
+
+
+      /* check for messages in message queue */
+      if ((ret=read_message_queue(msgid,&ipcmsg)) > 0) {
+	logmsg(3,"got message: %d (%02x,%02x,%02x,...) = %d",
+	       ipcmsg.msgtype,ipcmsg.data[0],ipcmsg.data[1],ipcmsg.data[2],ret);
+	
+	switch (ipcmsg.msgtype) {
+	case NX_IPC_MSG_CMD:
+	  process_command(fd,config->serial_protocol,ipcmsg.data);
+	  break;
+	case NX_IPC_MSG_PROG:
+	  logmsg(0,"unsupported prog message ignored");
+	  break;
+	default:
+	  logmsg(0,"unknown message received: %d",ipcmsg.msgtype);
+	}
+
+      }
+
     }
     fflush(stdout);
     shm->last_updated=time(NULL);

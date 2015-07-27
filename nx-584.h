@@ -79,6 +79,30 @@
 #define NX_SEC_KEYPAD_FUNC    0x3e
 #define NX_ZONE_BYPASS_TOGGLE 0x3f
 
+/* supported commands for "keypad" functions */
+#define NX_KEYPAD_FUNC_SILENCE	       0x3c00
+#define NX_KEYPAD_FUNC_DISARM	       0x3c01
+#define NX_KEYPAD_FUNC_ARM_AWAY	       0x3c02
+#define NX_KEYPAD_FUNC_ARM_STAY	       0x3c03
+#define NX_KEYPAD_FUNC_CANCEL	       0x3c04
+#define NX_KEYPAD_FUNC_AUTO_ARM        0x3c05
+#define NX_KEYPAD_FUNC_WALKTEST_START  0x3c06
+#define NX_KEYPAD_FUNC_WALKTEST_STOP   0x3c07
+#define NX_KEYPAD_FUNC_STAY            0x3e00
+#define NX_KEYPAD_FUNC_CHIME           0x3e01
+#define NX_KEYPAD_FUNC_EXIT            0x3e02
+#define NX_KEYPAD_FUNC_BYPASS          0x3e03
+#define NX_KEYPAD_FUNC_FIRE_PANIC      0x3e04
+#define NX_KEYPAD_FUNC_MEDICAL_PANIC   0x3e05
+#define NX_KEYPAD_FUNC_POLICE_PANIC    0x3e06
+#define NX_KEYPAD_FUNC_SMOKE_RESET     0x3e07
+#define NX_KEYPAD_FUNC_SILENT_EXIT     0x3e0a
+#define NX_KEYPAD_FUNC_TEST            0x3e0b
+#define NX_KEYPAD_FUNC_GROUP_BYPASS    0x3e0c
+#define NX_KEYPAD_FUNC_AUX1            0x3e0d
+#define NX_KEYPAD_FUNC_AUX2            0x3e0e
+#define NX_KEYPAD_FUNC_START_SOUNDER   0x3e0f
+  
 
 typedef unsigned char uchar;
 typedef unsigned short int ushort;
