@@ -1,6 +1,6 @@
 /* nxstat.c
  * 
- * Copyright (C) 2009,2013 Timo Kokkonen. All Rights Reserved.
+ * Copyright (C) 2009-2015 Timo Kokkonen. All Rights Reserved.
  *
  * $Id$
  */
@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 
     for(i=0;i<azones;i++) {
       zn=&astat->zones[i];
-      if (zn->last_updated > shm->daemon_started) {
+      if (zn->last_updated > 0) {
 	snprintf(tmp,sizeof(tmp)-1,"(%s ago)",timedeltastr(now - zn->last_updated));
 	tmp[sizeof(tmp)-1]=0;
       } else {
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
 	       zn->name,
 	       (zn->bypass?"Bypassed":"Active"),
 	       (zn->fault?"Fault":(zn->trouble?"Trouble":"OK")),
-	       (zn->last_updated > shm->daemon_started ? timestampstr(zn->last_updated):"n/a"),
+	       (zn->last_updated > 0 ? timestampstr(zn->last_updated):"n/a"),
 	       tmp
 	       );
     }
@@ -352,8 +352,15 @@ int main(int argc, char **argv)
 	 timedeltastr(now - lastparttime)
 	 );
 
-  //printf(" Last status check: %s\n",timestampstr(astat->last_statuscheck));
-  //printf("Last clock sync: %s\n",timestampstr(astat->last_timesync));
+
+  if (verbose_mode) {
+    printf("    Daemon started: %s (%s ago)\n",
+	   timestampstr(shm->daemon_started),
+	   timedeltastr(now - shm->daemon_started));
+    printf(" Last status check: %s\n",timestampstr(astat->last_statuscheck));
+    printf("   Last clock sync: %s\n",timestampstr(astat->last_timesync));
+  }
+
 
   return 0;
 }

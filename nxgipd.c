@@ -1,6 +1,6 @@
 /* nxgipd.c
  * 
- * Copyright (C) 2009,2013 Timo Kokkonen. All Rights Reserved.
+ * Copyright (C) 2009-2015 Timo Kokkonen. All Rights Reserved.
  *
  * $Id$
  */
@@ -85,9 +85,16 @@ int get_system_status(int fd, int protocol)
   nxmsg_t msgout,msgin;
   int i;
 
-  for (i=0;i<NX_PARTITIONS_MAX;i++) {
+
+  /* default make sure all zones/partitions are disabled initially */
+  for (i=0;i<NX_PARTITIONS_MAX;i++) 
     astat->partitions[i].valid=-1;
+  for (i=0;i<NX_ZONES_MAX;i++) {
+    astat->zones[i].valid=-1;
+    astat->zones[i].last_updated=0;
   }
+  
+
 
   astat->last_partition=((config->partitions > 0 && config->partitions < NX_PARTITIONS_MAX) ? 
 			 config->partitions : NX_PARTITIONS_MAX);
@@ -139,7 +146,7 @@ int get_system_status(int fd, int protocol)
 
  
   /* get zone info & names */
-  astat->last_zone=((config->zones > 0 && config->zones < NX_ZONES_MAX) ? config->zones : 48);
+  astat->last_zone=((config->zones > 0 && config->zones <= NX_ZONES_MAX) ? config->zones : 48);
 
   for (i=0;i<astat->last_zone;i++) {
     astat->zones[i].valid=1;
@@ -163,11 +170,25 @@ int get_system_status(int fd, int protocol)
   }
   printf("\n");
 
+
+  if (config->status_file) {
+    logmsg(0,"loading status file: %s",config->status_file);
+    int r = load_status_xml(config->status_file,astat);
+    if (r != 0) {
+      logmsg(0,"error loading status file: %d",r);
+    }
+  }
+
+
   for (i=0;i<astat->last_zone;i++) {
     printf("Zone %2d %16s %10s %8s\n",i+1,astat->zones[i].name,
 	   (astat->zones[i].bypass?"Bypassed":"Active"),(astat->zones[i].fault?"Fault":"OK"));
-    logmsg(1,"Zone %2d %16s %10s %8s",i+1,astat->zones[i].name,
-	   (astat->zones[i].bypass?"Bypassed":"Active"),(astat->zones[i].fault?"Fault":"OK"));
+    logmsg(1,"Zone %2d %16s %10s %8s %s",i+1,
+	   astat->zones[i].name,
+	   (astat->zones[i].bypass?"Bypassed":"Active"),
+	   (astat->zones[i].fault?"Fault":"OK"),
+	   (astat->zones[i].last_updated > 0 ? timestampstr(astat->zones[i].last_updated):"n/a")
+	   );
 
   }
 
@@ -244,6 +265,14 @@ void signal_handler(int sig)
 
 void exit_cleanup()
 {
+  logmsg(3,"exit_cleanup()");
+  if (config->status_file) {
+    int r = save_status_xml(config->status_file, astat);
+    if (r != 0) {
+      logmsg(0,"failed to save alarm status: %s (%d)",config->status_file,r);
+    }
+  }
+
   if (shm != NULL) 
     release_shared_memory(shmid,shm);
 }
@@ -344,11 +373,11 @@ int main(int argc, char **argv)
 	      "                          save process pid in file\n"
 	      "  --daemon, -d            run as background daemon process\n"
 	      "  --help, -h              display this help and exit\n"
-	      "  --log                   dump panel log when starting\n"
+	      "  --log, -l               dump panel log when starting\n"
 	      "  --log-only              dump panel log and exit\n"
 	      "  --probe                 probe bus for modules and exit\n"
 	      "  --scan=<module>         dump full config of a module and exit\n"
-	      "  --scan=<module>,<loc>   dump single config location of a module and exit\n"
+	      "  --scan=<xmodule>,<loc>   dump single config location of a module and exit\n"
 	      "  --status                display NX gateway status/settings\n"
 	      "  --verbose, -v           enable verbose output to stdout\n"
 	      "  --version, -V           print program version\n"
@@ -361,6 +390,11 @@ int main(int argc, char **argv)
   printf("Loading configuration...\n");
   if (load_config(config_file,config,1))
     die("failed to open configuration file: %s",config_file);
+
+  if (config->status_file) {
+    printf("Using alarm status file: %s\n",config->status_file);
+  }
+
 
   /* setup signal handling */
   sigact.sa_handler=signal_handler;
@@ -375,7 +409,7 @@ int main(int argc, char **argv)
 
   /* initialize shared memory segment */
   if (init_shared_memory(config->shmkey,config->shmmode,sizeof(nx_shm_t),&shmid,&shm))
-    die("failed to initalice IPC shared memory segment");
+    die("failed to initialize IPC shared memory segment");
   istatus=&shm->intstatus;
   astat=&shm->alarmstatus;
 

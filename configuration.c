@@ -58,9 +58,9 @@ const char* xml_whitespace_cb(mxml_node_t *node, int where)
 {
   const char *name = node->value.element.name;
 
-  if ( !strcmp(name,"ZWaveNetwork") || strstr(name,"?xml ")==name ) {
+  if ( !strcmp(name,"AlarmZones") || !strcmp(name,"AlarmPartitions") || strstr(name,"?xml ")==name ) {
     if ( where == MXML_WS_AFTER_OPEN || where == MXML_WS_AFTER_CLOSE ) return("\n");
-  } else if ( !strcmp(name,"Node") ) {
+  } else if ( !strcmp(name,"Zone") || ~!strcmp(name,"Partition") ) {
     if (where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE) return("  ");
     return("\n");
   } else {
@@ -169,12 +169,192 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
     }
   }
 
+  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","statusfile");
+  if (node) {
+    EXPAND_FILENAME(tmpstr,dir,node->value.text.string);
+    config->status_file=strdup(tmpstr);
+  }
+
+
+
   mxmlDelete(configxml);
   return 0;
 }
 
 
+int save_status_xml(const char *filename, nx_system_status_t *astat)
+{
+  FILE *fp;
+  mxml_node_t *xml,*zones,*partitions,*z,*e,*p;
+  int i;
+
+  if (!filename || !astat) return -1;
+
+  xml=mxmlNewXML("1.0");
+  zones=mxmlNewElement(xml,"AlarmZones");
+  partitions=mxmlNewElement(xml,"AlarmPartitions");
 
 
+  /* loop through partitions */
+
+  for (i=0; i<astat->last_partition; i++) {
+    nx_partition_status_t *pt = &astat->partitions[i];
+
+    if (pt->valid) {
+      p=mxmlNewElement(partitions,"Partition");
+      mxmlElementSetAttrf(p,"id","%u",i+1);
+
+      e=mxmlNewElement(p,"LastChange");
+      mxmlElementSetAttrf(e,"time","%lu",(unsigned long)pt->last_updated);
+    }
+  }
+
+
+  /* loop through zones */
+
+  for (i=0; i<astat->last_zone; i++) {
+    nx_zone_status_t *zn = &astat->zones[i];
+
+    if (zn->valid) {
+      z=mxmlNewElement(zones,"Zone");
+      mxmlElementSetAttrf(z,"id","%u",i+1);
+      mxmlElementSetAttrf(z,"name","%s",zn->name);
+
+      e=mxmlNewElement(z,"LastChange");
+      mxmlElementSetAttrf(e,"time","%lu",(unsigned long)zn->last_updated);
+
+    }
+  }
+
+
+  fp=fopen(filename,"w");
+  if (!fp) {
+    warn("failed to create file: %s", filename);
+    return -2;
+  }
+
+  mxmlSetWrapMargin(0);
+  mxmlSaveFile(xml,fp,xml_whitespace_cb);
+  fclose(fp);
+
+  mxmlDelete(xml);
+
+  return 0;
+}
+
+
+int load_status_xml(const char *filename, nx_system_status_t *astat)
+{
+  mxml_node_t *xml, *zones, *partitions, *node;
+  nx_zone_status_t *zn;
+  nx_partition_status_t *pt;
+
+  if (!filename || !astat) return -1;
+
+  xml=load_xml_file(filename);
+  if (!xml) {
+    warn("failed to load/parse XML file: %s", filename);
+    return -2;
+  }
+
+  zones=mxmlFindElement(xml,xml,"AlarmZones",NULL,NULL,MXML_DESCEND);
+  partitions=mxmlFindElement(xml,xml,"AlarmPartitions",NULL,NULL,MXML_DESCEND);
+  if (!zones || !partitions) {
+    warn("invalid status file: %s", filename);
+    mxmlDelete(xml);
+    return -3;
+  }
+
+
+
+  /* parse AlarmZones section */
+
+  node=zones;
+  zn=NULL;
+  while ((node=mxmlWalkNext(node,zones,MXML_DESCEND))) {
+    const char *nname = node->value.element.name;
+    const char *id_s, *name_s;
+
+    if (node->type != MXML_ELEMENT) continue;
+
+    //printf("node: %s\n",(nname != NULL?nname:"NULL"));
+
+    if (!strcmp(nname,"Zone")) {
+      int id;
+
+      id_s=mxmlElementGetAttr(node,"id");
+      name_s=mxmlElementGetAttr(node,"name");
+
+      zn=NULL;
+      if (id_s && (sscanf(id_s,"%d", &id)==1)) {
+	if (id > 0 && id <= NX_ZONES_MAX) {
+	  zn=&astat->zones[id-1];
+	  if (name_s)  {
+	    if (strcmp(zn->name,name_s)) {
+	      logmsg(0,"zone renamed: '%s' -> '%s'",name_s,zn->name);
+	    }
+	  }
+	}
+      }
+    }
+
+    if (!zn) continue;
+
+    if (!strcmp(nname,"LastChange")) {
+      unsigned long t;
+
+      const char *time_s = mxmlElementGetAttr(node,"time");
+      if (time_s && (sscanf(time_s,"%lu",&t)==1)) {
+	logmsg(3,"restore zone last change: %s %lu (%lu)",zn->name,t,zn->last_updated);
+	zn->last_updated=t;
+      }
+    }
+
+  }
+
+
+  /* parse AlarmPartitions section */
+
+  node=partitions;
+  pt=NULL;
+  while ((node=mxmlWalkNext(node,partitions,MXML_DESCEND))) {
+    const char *nname = node->value.element.name;
+    
+    if (node->type != MXML_ELEMENT) continue;
+
+    //printf("node: %s\n",(nname != NULL?nname:"NULL"));
+
+    if (!strcmp(nname,"Partition")) {
+      int id;
+      const char *id_s = mxmlElementGetAttr(node,"id");
+
+      pt=NULL;
+      if (id_s && (sscanf(id_s,"%d", &id)==1)) {
+	if (id > 0 && id <= NX_PARTITIONS_MAX) {
+	  pt=&astat->partitions[id-1];
+	  //printf("pt=%x id=%d\n",pt,id);
+	}
+      }
+    }
+
+    if (!pt) continue;
+
+    if (!strcmp(nname,"LastChange")) {
+      unsigned long t;
+
+      const char *time_s = mxmlElementGetAttr(node,"time");
+      if (time_s && (sscanf(time_s,"%lu",&t)==1)) {
+	logmsg(3,"restore partition last change: %lu (%lu)",t,pt->last_updated);
+	pt->last_updated=t;
+      }
+    }
+
+
+  }
+  
+
+  mxmlDelete(xml);
+  return 0;
+}
 
 /* eof :-) */

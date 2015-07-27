@@ -69,11 +69,12 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	char tmp[255];
 	nx_zone_status_t *zone = &astat->zones[zonenum];
 	int change=0;
+	int change2=0;
 
 	tmp[0]=0;
 
 	CHECK_STATUS_CHANGE(fault,zone->fault,change,tmp,"Fault","Ok");
-	CHECK_STATUS_CHANGE(bypass,zone->bypass,change,tmp,"Bypass","(Bypass)");
+	CHECK_STATUS_CHANGE(bypass,zone->bypass,change2,tmp,"Bypass","(Bypass)");
 	CHECK_STATUS_CHANGE(trouble,zone->trouble,change,tmp,"Trouble","(Trouble)");
 	CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change,tmp,"Alarm Memory","(Alarm Memory)");
 

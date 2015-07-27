@@ -158,6 +158,7 @@ typedef struct nx_configuration {
   int   syslog_mode;
   int   debug_mode;
   char *log_file;
+  char *status_file;
 
   uint  shmkey;
   int   shmmode;
@@ -187,6 +188,10 @@ const char* timestampstr(time_t t);
 
 /* configuration.c */
 int load_config(const char *configxml, nx_configuration_t *config, int logtest);
+int save_status_xml(const char *filename, nx_system_status_t *astat);
+int load_status_xml(const char *filename, nx_system_status_t *astat);
+
+
 
 /* probe.c */
 int read_config(int fd, int protocol, uchar node, int location);
