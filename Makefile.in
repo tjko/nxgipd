@@ -4,7 +4,7 @@
 # Makefile for nxgipd
 #
 
-Version = 0.9.0
+Version = 1.0.0beta
 PKGNAME = nxgipd
 
 SHELL = /bin/sh
