@@ -1,7 +1,8 @@
 /* process.c
  *
- * Copyright (C) 2011 Timo Kokkonen.
+ * Copyright (C) 2011-2015 Timo Kokkonen.
  * All Rights Reserved.
+ *
  */
 
 #include <stdio.h>
@@ -486,12 +487,14 @@ void process_command(int fd, int protocol, const uchar *data, nx_interface_statu
   if (data[0] == NX_PRI_KEYPAD_FUNC_PIN) {
     if ((istatus->sup_cmd_msgs[3] & 0x10) == 0) {
       logmsg(0,"Ignoring disabled command: Primary Keypad function with PIN command (0x3c)");
-      //return;
+      logmsg(0,"Keypad function ignored (partitions=0x%02x): %s",data[2],funcname);
+      return;
     }
   } 
   else if (data[0] == NX_SEC_KEYPAD_FUNC) {
     if ((istatus->sup_cmd_msgs[3] & 0x40) == 0) {
       logmsg(0,"Ignoring disabled command: Secondary Keypad Function with PIN (0x3e)");
+      logmsg(0,"Keypad function ignored (partitions=0x%02x): %s",data[2],funcname);
       return;
     }
   } 
@@ -513,15 +516,16 @@ void process_command(int fd, int protocol, const uchar *data, nx_interface_statu
   msgout.msg[offset+1]=data[2]; // partition mask
 
 
-  logmsg(2,"sending keypad function command: %s (partitions=0x%02x)",funcname,data[2]);
+  logmsg(2,"Sending keypad function command: %s (partitions=0x%02x)",funcname,data[2]);
 
   ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
+  memset(msgout.msg,0,5); // clear buffer so PIN won't be left in memory
   if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
-    logmsg(1,"keypad function success (partitions=0x%02x): %s",data[2],funcname);
+    logmsg(1,"Keypad function success (partitions=0x%02x): %s",data[2],funcname);
   } else if (ret == 1 && msgin.msgnum == NX_MSG_REJECTED) {
-    logmsg(0,"keypad function rejected (partitions=0x%02x): %s",data[2],funcname);
+    logmsg(0,"Keypad function rejected (partitions=0x%02x): %s",data[2],funcname);
   } else {
-    logmsg(0,"keypad function failed (partitions=0x%02x,ret=%d,msg=0x%02x): %s",
+    logmsg(0,"Keypad function failed (partitions=0x%02x,ret=%d,msg=0x%02x): %s",
 	   data[2],ret,msgin.msgnum,funcname);
   }
 
