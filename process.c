@@ -420,13 +420,13 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
 
 
-void process_command(int fd, int protocol, const uchar *data)
+void process_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
 {
   nxmsg_t msgout,msgin;
   int func,ret,len,offset;
   char *funcname = NULL;
 
-  if (!data) return;
+  if (!data || !istatus) return;
 
   //logmsg(0,"process_command: %02x,%02x,%02x",data[0],data[1],data[2]);
   func=(data[0]<<8 | data[1]);
@@ -444,6 +444,34 @@ void process_command(int fd, int protocol, const uchar *data)
   case NX_KEYPAD_FUNC_BYPASS:
     funcname="Bypass interiors";
     break;
+  case NX_KEYPAD_FUNC_GROUP_BYPASS:
+    funcname="Group Bypass";
+    break;
+  case NX_KEYPAD_FUNC_SMOKE_RESET:
+    funcname="Smoke detector reset";
+    break;
+  case NX_KEYPAD_FUNC_START_SOUNDER:
+    funcname="Start keypad sounder";
+    break;
+  case NX_KEYPAD_FUNC_ARM_AWAY:
+    funcname="Arm in Away mode";
+    break;
+  case NX_KEYPAD_FUNC_ARM_STAY:
+    funcname="Arm in Stay mode";
+    break;
+  case NX_KEYPAD_FUNC_DISARM:
+    funcname="Disarm partition";
+    break;
+  case NX_KEYPAD_FUNC_SILENCE:
+    funcname="Turn off any sounder or alarm";
+    break;
+  case NX_KEYPAD_FUNC_CANCEL:
+    funcname="Cancel (alarm)";
+    break;
+  case NX_KEYPAD_FUNC_AUTO_ARM:
+    funcname="Initiate Auto-Arm";
+    break;
+
   default:
     funcname=NULL;
   }
@@ -452,6 +480,21 @@ void process_command(int fd, int protocol, const uchar *data)
     logmsg(0,"Invalid command message received: 0x%04x",func);
     return;
   }
+
+
+  /* check if required commands are enabled on the interface */
+  if (data[0] == NX_PRI_KEYPAD_FUNC_PIN) {
+    if ((istatus->sup_cmd_msgs[3] & 0x10) == 0) {
+      logmsg(0,"Ignoring disabled command: Primary Keypad function with PIN command (0x3c)");
+      //return;
+    }
+  } 
+  else if (data[0] == NX_SEC_KEYPAD_FUNC) {
+    if ((istatus->sup_cmd_msgs[3] & 0x40) == 0) {
+      logmsg(0,"Ignoring disabled command: Secondary Keypad Function with PIN (0x3e)");
+      return;
+    }
+  } 
 
 
   msgout.msgnum=data[0];
@@ -469,13 +512,17 @@ void process_command(int fd, int protocol, const uchar *data)
   msgout.msg[offset]=data[1]; // keypad function
   msgout.msg[offset+1]=data[2]; // partition mask
 
-  logmsg(3,"sending keypad function command: %s (partitions=0x%02x)",funcname,data[2]);
+
+  logmsg(2,"sending keypad function command: %s (partitions=0x%02x)",funcname,data[2]);
 
   ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
   if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
     logmsg(1,"keypad function success (partitions=0x%02x): %s",data[2],funcname);
+  } else if (ret == 1 && msgin.msgnum == NX_MSG_REJECTED) {
+    logmsg(0,"keypad function rejected (partitions=0x%02x): %s",data[2],funcname);
   } else {
-    logmsg(1,"keypad function failed (partitions=0x%02x): %s",data[2],funcname);
+    logmsg(0,"keypad function failed (partitions=0x%02x,ret=%d,msg=0x%02x): %s",
+	   data[2],ret,msgin.msgnum,funcname);
   }
 
 }

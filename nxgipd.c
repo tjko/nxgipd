@@ -325,9 +325,22 @@ int read_message_queue(int msgid, nx_ipc_msg_t *msg)
 }
 
 
+
+void crash_signal_handler(int sig)
+{
+  logmsg(0,"program crashed (sig=%d)", sig);
+
+  if (shm != NULL) 
+    release_shared_memory(shmid,shm);
+  if (msgid >= 0) 
+    release_message_queue(msgid);
+
+  _exit(2); // avoid running any at_exit functions
+}
+
 void signal_handler(int sig)
 {
-  logmsg(0,"program terminated (%d)",sig);
+  logmsg(0,"program terminated (sig=%d)",sig);
   exit(1);
 }
 
@@ -476,6 +489,9 @@ int main(int argc, char **argv)
   sigact.sa_flags=0;
   sigaction(SIGTERM,&sigact,NULL);
   sigaction(SIGINT,&sigact,NULL);
+  sigact.sa_handler=crash_signal_handler;
+  sigaction(SIGSEGV,&sigact,NULL);
+  sigaction(SIGBUS,&sigact,NULL);
   sigact.sa_handler=SIG_IGN;
   sigaction(SIGHUP,&sigact,NULL);
 
@@ -679,7 +695,7 @@ int main(int argc, char **argv)
 	
 	switch (ipcmsg.msgtype) {
 	case NX_IPC_MSG_CMD:
-	  process_command(fd,config->serial_protocol,ipcmsg.data);
+	  process_command(fd,config->serial_protocol,ipcmsg.data,istatus);
 	  break;
 	case NX_IPC_MSG_PROG:
 	  logmsg(0,"unsupported prog message ignored");

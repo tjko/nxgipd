@@ -79,7 +79,11 @@
 #define NX_SEC_KEYPAD_FUNC    0x3e
 #define NX_ZONE_BYPASS_TOGGLE 0x3f
 
-/* supported commands for "keypad" functions */
+
+
+#define NX_KEYPAD_FUNC_NEED_PIN(mask)  ( (mask >> 8) == 0x3c ? 1 : 0 ) 
+
+/* masks for "keypad" functions (command / function) */
 #define NX_KEYPAD_FUNC_SILENCE	       0x3c00
 #define NX_KEYPAD_FUNC_DISARM	       0x3c01
 #define NX_KEYPAD_FUNC_ARM_AWAY	       0x3c02
