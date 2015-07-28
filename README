@@ -87,6 +87,9 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
 	v1.0.0beta - added zone status saving/restore
+		   - new command nxcmd to send commands to alarm panel
+	             (based on initial implmementation by Brian Whaley)
+		   - new option -i for nxstat to display interface status
 	v0.9.0     - first public release
 
 
