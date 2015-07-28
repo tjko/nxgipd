@@ -101,6 +101,7 @@ archive:
 install: all install.dirs install.man
 	$(INSTALL) -m 755 $(PKGNAME) $(INSTALL_ROOT)/$(sbindir)/$(PKGNAME)
 	$(INSTALL) -m 755 nxstat $(INSTALL_ROOT)/$(bindir)/nxstat
+	$(INSTALL) -m 755 nxcmd $(INSTALL_ROOT)/$(bindir)/nxcmd
 
 printable.man:
 	groff -Tps -mandoc ./$(PKGNAME).1 >$(PKGNAME).ps
