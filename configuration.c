@@ -197,6 +197,8 @@ int save_status_xml(const char *filename, nx_system_status_t *astat)
   FILE *fp;
   mxml_node_t *xml,*zones,*partitions,*z,*e,*p;
   int i;
+  int part_count = 0;
+  int zone_count = 0;
 
   if (!filename || !astat) return -1;
 
@@ -216,6 +218,8 @@ int save_status_xml(const char *filename, nx_system_status_t *astat)
 
       e=mxmlNewElement(p,"LastChange");
       mxmlElementSetAttrf(e,"time","%lu",(unsigned long)pt->last_updated);
+      
+      part_count++;
     }
   }
 
@@ -233,14 +237,21 @@ int save_status_xml(const char *filename, nx_system_status_t *astat)
       e=mxmlNewElement(z,"LastChange");
       mxmlElementSetAttrf(e,"time","%lu",(unsigned long)zn->last_updated);
 
+      zone_count++;
     }
+  }
+
+
+  if (zone_count < 1) {
+    mxmlDelete(xml);
+    return -2;
   }
 
 
   fp=fopen(filename,"w");
   if (!fp) {
     warn("failed to create file: %s", filename);
-    return -2;
+    return -3;
   }
 
   mxmlSetWrapMargin(0);
