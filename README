@@ -81,6 +81,7 @@ SERIAL INTERFACE CONFIGURATION
 		 * System Status Request
 		 * Program Data Request (OPTIONAL)
 		 * Set Clock / Calendar Command (OPTIONAL)
+		 * Primary Keypad Function with PIN (OPTIONAL)
 		 * Secondary Keypad Function (OPTIONAL)
 		 
 

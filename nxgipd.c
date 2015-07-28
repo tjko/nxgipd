@@ -703,7 +703,8 @@ int main(int argc, char **argv)
 	default:
 	  logmsg(0,"unknown message received: %d",ipcmsg.msgtype);
 	}
-
+	
+	memset(ipcmsg.data,0,sizeof(ipcmsg.data)); // clear message data so PIN won't be left in memory
       }
 
     }

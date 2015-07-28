@@ -286,9 +286,10 @@ int main(int argc, char **argv)
     free(pin);
   }
 
-  printf("msgtype: %d data: ",ipcmsg.msgtype);
-  for(i=0;i<8;i++) { printf("%02x ",ipcmsg.data[i]); }
-  printf("\n");
+
+  //printf("msgtype: %d data: ",ipcmsg.msgtype);
+  //for(i=0;i<8;i++) { printf("%02x ",ipcmsg.data[i]); }
+  //printf("\n");
 
 
   /* send IPC message */
