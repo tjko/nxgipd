@@ -473,12 +473,13 @@ int nx_receive_message(int fd, int protocol, nxmsg_t *msg, int timeout)
 
       int r = nx_read_packet(fd,msg,protocol);
       if (r==1) {
-	logmsg(3,"nx_receive_message(): got message %02x",msg->msgnum & NX_MSG_MASK);
+	logmsg(3,"nx_receive_message(): got message %02x (%02x)",msg->msgnum & NX_MSG_MASK, msg->msgnum);
 	if ( NX_IS_ACKMSG(msg->msgnum) ) {
 	  logmsg(3,"nx_receive_message(): sending ACK as requested");
 	  msgout.msgnum=NX_POSITIVE_ACK;
 	  msgout.len=1;
-	  nx_write_packet(fd,&msgout,protocol);
+	  if (nx_write_packet(fd,&msgout,protocol) < 0) 
+	    logmsg(3,"nx_receive_message(): error sending ACK");
 	}
 	return 1;
       } else if (r==0) {
