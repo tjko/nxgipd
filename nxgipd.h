@@ -186,8 +186,11 @@ typedef struct nx_ipc_msg {
 } nx_ipc_msg_t;
 
 
-#define NX_IPC_MSG_CMD   0x01
-#define NX_IPC_MSG_PROG  0x02
+/* msgtype values for nx_ipc_msg_t */
+#define NX_IPC_MSG_CMD       0x01
+#define NX_IPC_MSG_GET_PROG  0x02
+#define NX_IPC_MSG_BYPASS    0x03
+#define NX_IPC_MSG_MESSAGE   0x04
 
 
 extern nx_configuration_t *config;
@@ -214,6 +217,7 @@ int probe_bus(int fd, int protocol);
 /* process.c */
 void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_status_t *astat, nx_interface_status_t *istatus);
 void process_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
+void process_keypad_message(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
 
 #endif
 

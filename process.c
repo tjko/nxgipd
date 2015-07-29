@@ -411,6 +411,34 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
     break;
 
 
+  case NX_KEYPAD_MSG_RCVD:
+    {
+      uchar keypad = msg->msg[0];
+      uchar key = msg->msg[1];
+
+      logmsg(1,"terminal mode keypad keystroke (keypad=%d,len=%d): %02x",keypad,msg->len,key);
+    }
+    break;
+
+
+  case NX_CMD_FAILED:
+    logmsg(2,"command /request failed");
+    break;
+
+  case NX_POSITIVE_ACK:
+    logmsg(2,"positive ACK received");
+    break;
+
+  case NX_NEGATIVE_ACK:
+    logmsg(2,"negative ACK received");
+    break;
+
+  case NX_MSG_REJECTED:
+    logmsg(2,"message rejected");
+    break;
+
+
+
   default:
     if (verbose_mode) fprintf(stderr,"%s: unhandled message 0x%X\n",nx_timestampstr(msg->r_time),msgnum); 
     logmsg(1,"unhandled message 0x%X",msgnum);
@@ -527,6 +555,82 @@ void process_command(int fd, int protocol, const uchar *data, nx_interface_statu
   } else {
     logmsg(0,"Keypad function failed (partitions=0x%02x,ret=%d,msg=0x%02x): %s",
 	   data[2],ret,msgin.msgnum,funcname);
+  }
+
+}
+
+
+
+void process_keypad_message(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+{
+  nxmsg_t msgout,msgin;
+  int ret,loc;
+  int count=0;
+
+  if (!data || !istatus) return;
+
+
+  if (data[2+16+16] != 0) {
+    /* text string in the message should terminate to a null... */
+    logmsg(0,"process_keypad_message: invalid message ignored");
+    return;
+  }
+
+  if ((istatus->sup_cmd_msgs[1] & 0x08) == 0) {
+    logmsg(0,"Send Keypad Text Message not supported. Message not sent: '%s'",
+	   (char*)&data[2]);
+    return;
+  }
+
+
+  msgout.msgnum=NX_KEYPAD_MSG_SEND;
+  msgout.len=12;
+  msgout.msg[0]=data[0];
+  msgout.msg[1]=0;
+
+
+  logmsg(1,"Sending keypad text (keypad=%d)...",data[0]);
+
+  /* we need to send the text in four 8 character blocks */
+  for (loc=0;loc<4;loc++) {
+    msgout.msg[2]=loc*8;
+    memcpy(&msgout.msg[3],data+2+(loc*8),8); 
+
+
+    ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
+    if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
+      logmsg(3,"Keypad text message success (keypad=%d loc=%d)",data[0],loc*8);
+      count++;
+    } else {
+      logmsg(0,"Keypad text message failed (keypad=%d). No such keypad?",data[0]);
+      break;
+    }
+  }
+
+
+  if (count >= 4)  {
+    logmsg(1,"Keypad text set successfully (keypad=%d): '%s'",data[0],(char*)&data[2]);
+
+    if (data[1] > 0) {
+      /* set keypad to terminal mode to display the message */
+      if ((istatus->sup_cmd_msgs[1] & 0x10) == 0) {
+	logmsg(0,"Keypad Terminal Mode Request not supported. Message not displayed.");
+	return;
+      }
+      
+      msgout.msgnum=NX_KEYPAD_TM_REQ;
+      msgout.len=3;
+      msgout.msg[0]=data[0];
+      msgout.msg[1]=data[1];
+
+      ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
+      if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
+	logmsg(1,"Keypad terminal mode enabled for %d seconds (keypad=%d)",data[1],data[0]);
+      } else {
+	logmsg(0,"Keypad terminal mode failed (keypad=%d)",data[0]);
+      }
+      
+    }
   }
 
 }

@@ -639,6 +639,9 @@ int main(int argc, char **argv)
       if (verbose_mode) printf("got message %02x!\n",msgin.msgnum & NX_MSG_MASK);
       //logmsg(3,"got message %02x",msgin.msgnum & NX_MSG_MASK);
       process_message(&msgin,0,verbose_mode,astat,istatus);
+      if ((msgin.msgnum & NX_MSG_MASK) == NX_KEYPAD_MSG_RCVD) {
+	//firmware bug panel ignores ACK for this message...
+      }
     } else {
       /* printf("timeout\n"); */
 
@@ -697,8 +700,14 @@ int main(int argc, char **argv)
 	case NX_IPC_MSG_CMD:
 	  process_command(fd,config->serial_protocol,ipcmsg.data,istatus);
 	  break;
-	case NX_IPC_MSG_PROG:
-	  logmsg(0,"unsupported prog message ignored");
+	case NX_IPC_MSG_BYPASS:
+	  logmsg(0,"unsupported bypass message ignored");
+	  break;
+	case NX_IPC_MSG_GET_PROG:
+	  logmsg(0,"unsupported get program message ignored");
+	  break;
+	case NX_IPC_MSG_MESSAGE:
+	  process_keypad_message(fd,config->serial_protocol,ipcmsg.data,istatus);
 	  break;
 	default:
 	  logmsg(0,"unknown message received: %d",ipcmsg.msgtype);

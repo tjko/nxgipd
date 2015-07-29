@@ -14,11 +14,12 @@
 #define NX_IS_ACKMSG(n)  ((n & NX_MSG_ACK_FLAG) == NX_MSG_ACK_FLAG)
 #define NX_IS_NONREPORTING_EVENT(type)  ( (type & 0x80) == 0x80 ? 1 : 0 ) 
 
-#define NX_PARTITIONS_MAX    8
-#define NX_ZONES_MAX         256
-#define NX_ZONE_NAME_MAXLEN  16
-#define NX_MAX_LOG_ENTRIES   256
-
+#define NX_PARTITIONS_MAX        8
+#define NX_ZONES_MAX             256
+#define NX_ZONE_NAME_MAXLEN      16
+#define NX_MAX_LOG_ENTRIES       256
+#define NX_LOGICAL_LOCATION_MAX  4096
+#define NX_BUS_ADDRESS_MAX       256
 
 /* module numbers */
 #define NX_MODULE_CONTROL_PANEL		8
@@ -106,7 +107,32 @@
 #define NX_KEYPAD_FUNC_AUX1            0x3e0d
 #define NX_KEYPAD_FUNC_AUX2            0x3e0e
 #define NX_KEYPAD_FUNC_START_SOUNDER   0x3e0f
-  
+
+
+/* keypad terminal mode key mapping */
+#define NX_KEYPAD_KEY_0                0x00
+#define NX_KEYPAD_KEY_1                0x01
+#define NX_KEYPAD_KEY_2                0x02
+#define NX_KEYPAD_KEY_3                0x03
+#define NX_KEYPAD_KEY_4                0x04
+#define NX_KEYPAD_KEY_5                0x05
+#define NX_KEYPAD_KEY_6                0x06
+#define NX_KEYPAD_KEY_7                0x07
+#define NX_KEYPAD_KEY_8                0x08
+#define NX_KEYPAD_KEY_9                0x09
+#define NX_KEYPAD_KEY_STAY             0x0a
+#define NX_KEYPAD_KEY_CHIME            0x0b
+#define NX_KEYPAD_KEY_EXIT             0x0c
+#define NX_KEYPAD_KEY_BYPASS           0x0d
+#define NX_KEYPAD_KEY_CANCEL           0x0e
+#define NX_KEYPAD_KEY_FIRE             0x0f
+#define NX_KEYPAD_KEY_MEDIC            0x10
+#define NX_KEYPAD_KEY_POLICE           0x11
+#define NX_KEYPAD_KEY_ASTERISK         0x12
+#define NX_KEYPAD_KEY_HASH             0x13
+#define NX_KEYPAD_KEY_UP               0x14
+#define NX_KEYPAD_KEY_DOWN             0x15
+
 
 typedef unsigned char uchar;
 typedef unsigned short int ushort;
