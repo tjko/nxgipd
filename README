@@ -9,8 +9,9 @@ Daemon process requires very minimal memory and cpu resource making it suitable
 to be run in on almost any hardware that runs Linux (or feel free to port 
 this to your favorite OS :-)
 nxgipd daemon process is meant to continuously monitor the alarm panel and
-log any activity into local log file and/or to syslog. nxstat program can
-be used to query panel status in real-time.
+log any activity into local log file and/or to syslog.
+Command line tools nxstat and nxcmd allow real-time polling of the alarm
+status and interact with the alarm.
 
 NOTE! Before you can use this program you typically need to first install 
 NX-584E (home automation) module or enable built-in serial port (NX-8E panel).
@@ -77,12 +78,15 @@ SERIAL INTERFACE CONFIGURATION
 		 * Zone Status Request
 		 * Zones Snapshot Request
 		 * Partition Status Request
-		 * PArtitions Snapshot Request
-		 * System Status Request
+		 * Partitions Snapshot Request
+		 * Send X-10 Message (OPTIONAL)
+		 * Send Keypad Text Message (OPTIONAL)
+		 * System Status Request (OPTIONAL)
 		 * Program Data Request (OPTIONAL)
 		 * Set Clock / Calendar Command (OPTIONAL)
 		 * Primary Keypad Function with PIN (OPTIONAL)
 		 * Secondary Keypad Function (OPTIONAL)
+		 * Zone Bypass Toggle (OPTIONAL)
 		 
 
 
