@@ -704,10 +704,10 @@ int main(int argc, char **argv)
 	  logmsg(0,"unsupported bypass message ignored");
 	  break;
 	case NX_IPC_MSG_GET_PROG:
-	  logmsg(0,"unsupported get program message ignored");
+	  process_get_program_command(fd,config->serial_protocol,ipcmsg.data,istatus);
 	  break;
 	case NX_IPC_MSG_MESSAGE:
-	  process_keypad_message(fd,config->serial_protocol,ipcmsg.data,istatus);
+	  process_keypadmsg_command(fd,config->serial_protocol,ipcmsg.data,istatus);
 	  break;
 	default:
 	  logmsg(0,"unknown message received: %d",ipcmsg.msgtype);

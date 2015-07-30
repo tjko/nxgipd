@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <time.h>
 #include "nx-584.h"
 #include "nxgipd.h"
@@ -561,7 +562,7 @@ void process_command(int fd, int protocol, const uchar *data, nx_interface_statu
 
 
 
-void process_keypad_message(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+void process_keypadmsg_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
 {
   nxmsg_t msgout,msgin;
   int ret,loc;
@@ -635,5 +636,142 @@ void process_keypad_message(int fd, int protocol, const uchar *data, nx_interfac
 
 }
 
+
+int read_program_data(int fd, int protocol, int device, int location, int mode, char **datastr, uchar *datatype) 
+{
+  nxmsg_t msgout,msgin,msgin2;
+  char tmp[16];
+  char buf[1024];
+  int ret,i,nibble,size,len,type;
+
+  if (!datastr || !datatype) return -10;
+  if (device < 0 || device >= NX_BUS_ADDRESS_MAX) return -11;
+  if (location < 0 || location >= NX_LOGICAL_LOCATION_MAX) return -12;
+
+
+  memset(&msgin,0,sizeof(msgin));
+  memset(&msgin2,0,sizeof(msgin2));
+
+  msgout.msgnum=NX_PROG_DATA_REQ;
+  msgout.len=4;
+  msgout.msg[0]=device;
+  msgout.msg[1]=(location >> 8) & 0x0f;
+  msgout.msg[2]=(location & 0xff);
+  
+  
+  ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PROG_DATA_REPLY,&msgin);
+  if (ret==1 && msgin.msgnum == NX_PROG_DATA_REPLY) {
+    nibble=((msgin.msg[1] & 0x10) == 0x10 ? 1 : 0);
+    len=(msgin.msg[3] & 0x1f) + 1;
+    type=(msgin.msg[3] >> 5 & 0x07);
+    if (nibble) 
+      size=len/2;
+    else 
+      size=len;
+      
+    if (size > 8) {
+      /* there is more data to be read, so request second segment */ 
+      msgout.msg[1] |= 0x40;
+      ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PROG_DATA_REPLY,&msgin2);
+      if (!(ret==1 && msgin2.msgnum == NX_PROG_DATA_REPLY)) {
+	/* failed to get second data segment */
+	return -2;
+      }
+    }
+  } else {
+    /* failed to get first data segment */ 
+    return -1;
+  }
+
+
+
+  /* reformat the program data */    
+  buf[0]=0;
+  for(i=0;i<len;i++) {
+    int va;
+    if (nibble) {
+      if (i<16) va=msgin.msg[4+i/2];
+      else va=msgin2.msg[4+(i-16)/2];
+      if (i%2==0) {va=0x0f & va; } else { va=(va >> 4) & 0x0f; }
+    } else {
+      if (i<8) va=msgin.msg[4+i];
+      else va=msgin2.msg[4+(i-8)];
+    }
+    
+    if (mode > 0) {
+      switch (type) {
+      case 0:
+	// binary
+	strncpy(tmp,(va&0x01?"1":"-"),2);
+	strncat(tmp,(va&0x02?"2":"-"),1);
+	strncat(tmp,(va&0x04?"3":"-"),1);
+	strncat(tmp,(va&0x08?"4":"-"),1);
+	strncat(tmp,(va&0x10?"5":"-"),1);
+	strncat(tmp,(va&0x20?"6":"-"),1);
+	strncat(tmp,(va&0x40?"7":"-"),1);
+	strncat(tmp,(va&0x80?"8":"-"),1);
+	strncat(tmp," ",1);
+	break;
+      case 1:
+	// decimal
+	if (nibble) snprintf(tmp,sizeof(tmp),"%01d ",va);
+	else snprintf(tmp,sizeof(tmp),"%02d ",va);
+	break;
+      case 2:
+	// hexadecimal
+	if (nibble) snprintf(tmp,sizeof(tmp),"%01x ",va);
+	else snprintf(tmp,sizeof(tmp),"%02x ",va);
+	break;
+      case 3:
+	// ASCII
+	snprintf(tmp,sizeof(tmp),"%c", va);
+	break;
+      default:
+	snprintf(tmp,sizeof(tmp),"%02X ",va);
+      }
+    } else {
+      snprintf(tmp,sizeof(tmp),"%02x",va);
+    }
+
+    strncat(buf,tmp,16);
+  }
+
+  *datatype = type;
+  *datastr = strdup(buf);
+  if (!datastr) return -3;
+
+  return len;
+}
+
+void process_get_program_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+{
+  int ret,loc;
+  char *datastr;
+  uchar datatype;
+
+  if (!data || !istatus) return;
+
+  loc = (data[1]&0xf)<<8 | data[2];
+
+  if ((istatus->sup_cmd_msgs[2] & 0x01) == 0) {
+    logmsg(0,"Program Data Request not supported. Message not sent (device=%d,loc=%d).",
+	   data[0],loc);
+    return;
+  }
+
+  logmsg(1,"Sending Program Data Request (device=%d,location=%d)...",data[0],loc);
+
+  ret = read_program_data(fd,protocol,data[0],loc,1,&datastr,&datatype);
+
+  if (ret > 0) {
+    logmsg(1,"Received program data (len=%d,type=%d): '%s'",
+	   ret,datatype,datastr);
+
+    free(datastr);
+  } else {
+    logmsg(0,"Program Data Request failed (device=%d,location=%d).",data[0],loc); 
+  }
+
+}
 
 /* eof :-) */
