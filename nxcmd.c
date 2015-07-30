@@ -269,8 +269,8 @@ int main(int argc, char **argv)
       sscanf(argv[optind+1],"%d",&device);
       sscanf(argv[optind+2],"%d",&location);
     }
-    if (device < 1 || device > NX_BUS_ADDRESS_MAX || 
-	location < 1 || location > NX_LOGICAL_LOCATION_MAX) 
+    if (device < 0 || device >= NX_BUS_ADDRESS_MAX || 
+	location < 0 || location >= NX_LOGICAL_LOCATION_MAX) 
       die("getprogram option require device and location arguments");
   }
   else if (!strcasecmp(cmd,"message")) {
@@ -348,9 +348,9 @@ int main(int argc, char **argv)
       ipcmsg.data[0]=zone-1;
       break;
     case NX_IPC_MSG_GET_PROG:
-      ipcmsg.data[0]=device-1;
-      ipcmsg.data[1]=((location-1) >> 8) & 0x0f;
-      ipcmsg.data[2]=(location-1) & 0xff;
+      ipcmsg.data[0]=device;
+      ipcmsg.data[1]=(location >> 8) & 0x0f;
+      ipcmsg.data[2]=location & 0xff;
       break;
     case NX_IPC_MSG_MESSAGE:
       //printf("keypad=%d,text1='%s',text2='%s'\n",keypad,text1,text2);
