@@ -17,11 +17,6 @@
 #include <time.h>
 #include <string.h>
 #include <signal.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/msg.h>
 #include <fcntl.h>
 #if HAVE_GETOPT_H && HAVE_GETOPT_LONG
 #include <getopt.h>

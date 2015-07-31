@@ -1,6 +1,6 @@
-/* ipc.c 
+/* ipc.c - IPC shared memory and message queue hanling
  *
- * Copyright (C) 2015 Timo Kokkonen.
+ * Copyright (C) 2009-2015 Timo Kokkonen.
  * All Rights Reserved.
  */
 
