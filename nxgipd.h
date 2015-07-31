@@ -208,6 +208,12 @@ int load_config(const char *configxml, nx_configuration_t *config, int logtest);
 int save_status_xml(const char *filename, nx_system_status_t *astat);
 int load_status_xml(const char *filename, nx_system_status_t *astat);
 
+/* ipc.c */
+int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_shm_t **shmptr);
+int init_message_queue(int msgkey, int msgmode);
+void release_shared_memory(int shmid, void *shmseg);
+void release_message_queue(int msgid);
+int read_message_queue(int msgid, nx_ipc_msg_t *msg);
 
 
 /* probe.c */
@@ -219,6 +225,10 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 void process_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
 void process_keypadmsg_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
 void process_get_program_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
+void process_zone_bypass_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
+void process_set_clock(int fd, int protocol, nx_system_status_t *astat);
+int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
+int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
 
 #endif
 

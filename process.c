@@ -743,11 +743,13 @@ int read_program_data(int fd, int protocol, int device, int location, int mode, 
   return len;
 }
 
+
 void process_get_program_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
 {
   int ret,loc;
-  char *datastr;
-  uchar datatype;
+  char *datastr = NULL;
+  uchar datatype = 0;
+  char *datatypestr = NULL;
 
   if (!data || !istatus) return;
 
@@ -764,8 +766,15 @@ void process_get_program_command(int fd, int protocol, const uchar *data, nx_int
   ret = read_program_data(fd,protocol,data[0],loc,1,&datastr,&datatype);
 
   if (ret > 0) {
-    logmsg(1,"Received program data (len=%d,type=%d): '%s'",
-	   ret,datatype,datastr);
+    switch (datatype) {
+    case 0: datatypestr="Bin"; break;
+    case 1: datatypestr="Dec"; break;
+    case 2: datatypestr="Hex"; break;
+    case 3: datatypestr="Asc"; break;
+    default: datatypestr="n/a";
+    }
+    logmsg(1,"Program data (dev=%d,loc=%03d,len=%d,type=%s): %s",
+	   data[0],loc,ret,datatypestr,datastr);
 
     free(datastr);
   } else {
@@ -773,5 +782,237 @@ void process_get_program_command(int fd, int protocol, const uchar *data, nx_int
   }
 
 }
+
+
+void process_zone_bypass_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+{
+  nxmsg_t msgout,msgin;
+  int ret;
+
+  if (!data || !istatus) return;
+
+
+  if ((istatus->sup_cmd_msgs[3] & 0x80) == 0) {
+    logmsg(0,"Zone Bypass Toggle not supported. Message not sent (Zone=%d).",
+	   data[0]+1);
+    return;
+  }
+
+  logmsg(2,"Sending Bypass Toggle (zone=%d)...",data[0]+1);
+
+
+  msgout.msgnum=NX_ZONE_BYPASS_TOGGLE;
+  msgout.len=2;
+  msgout.msg[0]=data[0];
+
+  ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
+  if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
+    logmsg(1,"Zone Bypass Toggle success: Zone=%d",data[0]+1);
+  } else {
+    logmsg(0,"Zone Bypass Toggle failure: Zone=%d",data[0]+1);
+  }
+
+
+}
+
+
+void process_set_clock(int fd, int protocol, nx_system_status_t *astat)
+{
+  nxmsg_t msgout,msgin;
+  struct tm tt;
+  time_t t = time(NULL);
+  int ret; 
+
+  if (localtime_r(&t,&tt)) {
+    msgout.msgnum=NX_SET_CLOCK_CMD;
+    msgout.len=7;
+    msgout.msg[0]=(tt.tm_year % 100);
+    msgout.msg[1]=tt.tm_mon+1;
+    msgout.msg[2]=tt.tm_mday;
+    msgout.msg[3]=tt.tm_hour;
+    msgout.msg[4]=tt.tm_min;
+    msgout.msg[5]=tt.tm_wday+1;
+    logmsg(3,"setting panel time to: %02d-%02d-%02d %02d:%02d weedkay=%d",
+	   msgout.msg[0],msgout.msg[1],msgout.msg[2],msgout.msg[3],
+	   msgout.msg[4],msgout.msg[5]);
+    ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
+    if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
+      logmsg(1,"panel clock synchronized successfully");
+    } else {
+      logmsg(1,"failed to set panel clock");
+    }
+  } else {
+    logmsg(2,"localtime_r() call failed");
+  }
+  
+  astat->last_timesync=t;
+}
+
+
+
+int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus)
+{
+  int ret;
+  nxmsg_t msgout,msgin;
+  int i = 0;
+  int last = 255;
+
+  if ((istatus->sup_cmd_msgs[1] & 0x04) == 0) {
+    logmsg(0,"Log Event Request command not supported. Skipping log dump.");
+    return -1;
+  }
+
+
+  logmsg(0,"Fetching log entries from alarm...");
+
+  while (i < last) {
+    msgout.msgnum=NX_LOG_EVENT_REQ;
+    msgout.len=2;
+    msgout.msg[0]=i;
+    ret=nx_send_message(fd,protocol,&msgout,5,3,NX_LOG_EVENT_MSG,&msgin);
+    if (ret==1 && msgin.msgnum == NX_LOG_EVENT_MSG) {
+      process_message(&msgin,0,0,astat,istatus);
+      last=msgin.msg[1];
+    } else {
+      logmsg(0,"failed to get log entry: %d",i);
+    } 
+    i++;
+  }
+
+  return 0;
+}
+
+
+
+int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus)
+{
+  int ret;
+  nxmsg_t msgout,msgin;
+  int i;
+
+
+  /* default make sure all zones/partitions are disabled initially */
+  for (i=0;i<NX_PARTITIONS_MAX;i++) 
+    astat->partitions[i].valid=-1;
+  for (i=0;i<NX_ZONES_MAX;i++) {
+    astat->zones[i].valid=-1;
+    astat->zones[i].last_updated=0;
+  }
+  
+
+  astat->last_partition=((config->partitions > 0 && config->partitions < NX_PARTITIONS_MAX) ? 
+			 config->partitions : NX_PARTITIONS_MAX);
+
+  astat->statuscheck_interval = (config->statuscheck > 0 ? config->statuscheck : 30);
+  astat->timesync_interval = config->timesync;
+
+  if ( (astat->timesync_interval > 0) &&
+       ((istatus->sup_cmd_msgs[3] & 0x08) == 0) ) {
+    logmsg(0,"Set Clock / Calendar command not enabled. Disabling clock sync.");
+    astat->timesync_interval=0;
+  }
+
+
+  /* make sure that basic commands are enabled in NX interface */
+  if ((istatus->sup_cmd_msgs[1] & 0x01) == 0) {
+    logmsg(0,"System Status Request command not enabled");
+    die("System Status Request command not enabled");
+  }
+  if ((istatus->sup_cmd_msgs[0] & 0x80) == 0) {
+    logmsg(0,"Partitions Snapshot Request command not enabled");
+    die("Partitions Snapshot Request command not enabled");
+  }
+  if ((istatus->sup_cmd_msgs[0] & 0x40) == 0) {
+    logmsg(0,"Partition Status Request command not enabled");
+    die("Partition Status Request command not enabled");
+  }
+  if ((istatus->sup_cmd_msgs[0] & 0x08) == 0) {
+    logmsg(0,"Zone Name Request command not enabled");
+    die("Zone Name Request command not enabled");
+  }
+  if ((istatus->sup_cmd_msgs[0] & 0x10) == 0) {
+    logmsg(0,"Zone Status Request command not enabled");
+    die("Zone Status Request command not enabled");
+  }
+
+
+  /* get alarm system status */
+  msgout.msgnum=NX_SYS_STATUS_REQ;
+  msgout.len=1;
+  ret=nx_send_message(fd,protocol,&msgout,5,3,NX_SYS_STATUS_MSG,&msgin);
+  if (!(ret == 1 && msgin.msgnum == NX_SYS_STATUS_MSG)) return -1;
+  process_message(&msgin,0,0,astat,istatus);
+
+
+  /* get partition statuses */
+  logmsg(0,"Querying partition statuses...");
+  msgout.msgnum=NX_PART_SNAPSHOT_REQ;
+  msgout.len=1;
+  ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PART_SNAPSHOT_MSG,&msgin);
+  if (!(ret == 1 && msgin.msgnum == NX_PART_SNAPSHOT_MSG)) return -2;
+  process_message(&msgin,0,0,astat,istatus);
+
+  for(i=0;i<astat->last_partition;i++) {
+    if (astat->partitions[i].valid) {
+      msgout.msgnum=NX_PART_STATUS_REQ;
+      msgout.len=2;
+      msgout.msg[0]=i;
+      ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PART_STATUS_MSG,&msgin);
+      if (!(ret == 1 && msgin.msgnum == NX_PART_STATUS_MSG)) return -3;
+      process_message(&msgin,1,0,astat,istatus);
+    }
+  }
+
+
+ 
+  /* get zone info & names */
+  astat->last_zone=((config->zones > 0 && config->zones <= NX_ZONES_MAX) ? config->zones : 48);
+  logmsg(0,"Querying zone names and statuses...");
+
+  for (i=0;i<astat->last_zone;i++) {
+    astat->zones[i].valid=1;
+
+    msgout.msgnum=NX_ZONE_NAME_REQ;
+    msgout.len=2;
+    msgout.msg[0]=i;
+    ret=nx_send_message(fd,protocol,&msgout,5,3,NX_ZONE_NAME_MSG,&msgin);
+    if (ret != 1 || msgin.msgnum != NX_ZONE_NAME_MSG) return -4;
+    process_message(&msgin,1,0,astat,istatus);
+
+    msgout.msgnum=NX_ZONE_STATUS_REQ;
+    msgout.len=2;
+    msgout.msg[0]=i;
+    ret=nx_send_message(fd,protocol,&msgout,5,3,NX_ZONE_STATUS_MSG,&msgin);
+    if (ret != 1 || msgin.msgnum != NX_ZONE_STATUS_MSG) return -5;
+    process_message(&msgin,1,0,astat,istatus);
+
+    printf(".");
+    fflush(stdout);
+  }
+  printf("\n");
+
+
+  if (config->status_file) {
+    logmsg(0,"loading status file: %s",config->status_file);
+    int r = load_status_xml(config->status_file,astat);
+    if (r != 0) {
+      logmsg(0,"error loading status file: %d",r);
+    }
+  }
+
+
+  for (i=0;i<astat->last_zone;i++) {
+    logmsg(1,"Zone %2d %16s %10s %8s %s",i+1,
+	   astat->zones[i].name,
+	   (astat->zones[i].bypass?"Bypassed":"Active"),
+	   (astat->zones[i].fault?"Fault":"OK"),
+	   (astat->zones[i].last_updated > 0 ? timestampstr(astat->zones[i].last_updated):"n/a")
+	   );
+  }
+
+    
+  return 0;
+}
+
 
 /* eof :-) */
