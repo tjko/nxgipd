@@ -189,9 +189,9 @@ int main(int argc, char **argv)
       break;
 
     case 'V':
-      fprintf(stderr,"%s v%s  %s\n"
+      fprintf(stderr,"%s v%s (%s)  %s\n"
 	      "Copyright (C) 2009-2015 Timo Kokkonen. All Rights Reserved.\n",
-	      program_name,VERSION,HOST_TYPE);
+	      program_name,VERSION,BUILDDATE,HOST_TYPE);
       exit(0);
       
     case 'h':

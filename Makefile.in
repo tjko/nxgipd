@@ -7,10 +7,12 @@
 Version = 1.0.0beta
 PKGNAME = nxgipd
 
+BuildDate = $(shell date +%Y-%m-%d)
+
 SHELL = /bin/sh
 
 DEFS = @DEFS@
-DEFS += -DVERSION=\"$(Version)\"
+DEFS += -DVERSION=\"$(Version)\" -DBUILDDATE=\"$(BuildDate)\"
 
 srcdir = @srcdir@
 VPATH = @srcdir@
@@ -66,7 +68,7 @@ PROGS = $(PKGNAME) nxstat nxcmd
 COMMON_OBJS = configuration.o misc.o
 NXSTAT_OBJS = nxstat.o nx-584.o $(COMMON_OBJS)
 NXCMD_OBJS = nxcmd.o $(COMMON_OBJS)
-OBJS = nx-584.o probe.o process.o $(PKGNAME).o $(COMMON_OBJS)
+OBJS = nx-584.o probe.o process.o ipc.o $(PKGNAME).o $(COMMON_OBJS)
 
 all:	$(PROGS)
 

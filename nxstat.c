@@ -116,8 +116,8 @@ int main(int argc, char **argv)
       break;
 
     case 'V':
-      fprintf(stderr,"%s v%s  %s\nCopyright (C) 2009,2013 Timo Kokkonen. All Rights Reserved.\n",
-	      program_name,VERSION,HOST_TYPE);
+      fprintf(stderr,"%s v%s (%s)  %s\nCopyright (C) 2009-2015 Timo Kokkonen. All Rights Reserved.\n",
+	      program_name,VERSION,BUILDDATE,HOST_TYPE);
       exit(0);
       
     case 'l':
