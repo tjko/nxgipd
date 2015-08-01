@@ -382,6 +382,39 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
     break;
 
 
+  case NX_X10_RCV_MSG:
+    {
+      uchar house = msg->msg[0] + 'A';
+      uchar unit = msg->msg[1] + 1;
+      char *func;
+      
+      switch (msg->msg[2]) {
+
+      case NX_X10_ALL_UNITS_OFF: 
+	func="All units OFF"; break;
+      case NX_X10_ALL_LIGHTS_ON: 
+	func="All lights ON";break;
+      case NX_X10_ON: 
+	func="On"; break;
+      case NX_X10_OFF:
+	func="Off"; break;
+      case NX_X10_DIM:
+	func="Dim"; break;
+      case NX_X10_BRIGHT:
+	func="Bright"; break;
+      case NX_X10_ALL_LIGHTS_OFF:
+	func="All lights OFF"; break;
+      default: 
+	func="Unknown";
+
+      }
+
+      logmsg(1,"X-10 Message Received: House=%c, Unit=%d, Function=%02x (%s)",
+	     house,unit,msg->msg[2],func);
+    }
+    break;
+
+
   case NX_LOG_EVENT_MSG:
     {
       nx_log_event_t *e;
@@ -422,6 +455,8 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
     break;
 
 
+
+
   case NX_CMD_FAILED:
     logmsg(2,"command /request failed");
     break;
@@ -441,8 +476,8 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
 
   default:
-    if (verbose_mode) fprintf(stderr,"%s: unhandled message 0x%X\n",nx_timestampstr(msg->r_time),msgnum); 
-    logmsg(1,"unhandled message 0x%X",msgnum);
+    if (verbose_mode) fprintf(stderr,"%s: unhandled message 0x%02x\n",nx_timestampstr(msg->r_time),msgnum); 
+    logmsg(1,"unhandled message 0x%02x",msgnum);
     
   }
 
