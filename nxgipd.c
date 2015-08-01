@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <string.h>
 #include <signal.h>
@@ -57,8 +58,34 @@ void crash_signal_handler(int sig)
 
 void signal_handler(int sig)
 {
-  logmsg(0,"program terminated: signal=%d (%s)", sig, strsignal(sig));
-  exit(1);
+  pid_t pid;
+  int status;
+
+  if (sig != SIGCHLD) { 
+    logmsg(0,"program terminated: signal=%d (%s)", sig, strsignal(sig));
+    exit(1);
+  }
+
+  /* reaper... */
+  while ((pid=waitpid(-1,&status,WNOHANG)) > 0) {
+    if (WIFEXITED(status)) {
+      logmsg(1,"child process exited: pid=%u, status=%d", pid, WEXITSTATUS(status));
+    } 
+    else if (WIFSIGNALED(status)) {
+      logmsg(1,"child process terminated by signal: pid=%u, signal=%d (%s)",
+	     pid, WTERMSIG(status), strsignal(WTERMSIG(status)));
+    }
+    else if (WIFSTOPPED(status)) {
+      logmsg(1,"child process stopped: pid=%u, signal=%d (%s)", 
+	     pid, WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+    }
+    else if (WIFCONTINUED(status)) {
+      logmsg(1,"child process continued: pid=%u", pid);
+    }
+    else {
+      logmsg(0,"something spooky happened to child process: pid=%u", pid);
+    }
+  }
 }
 
 
@@ -203,16 +230,27 @@ int main(int argc, char **argv)
 
 
   /* setup signal handling */
-  sigact.sa_handler=signal_handler;
   sigemptyset(&sigact.sa_mask);
   sigact.sa_flags=0;
+
+  sigact.sa_handler=signal_handler;
   sigaction(SIGTERM,&sigact,NULL);
   sigaction(SIGINT,&sigact,NULL);
+  sigaction(SIGQUIT,&sigact,NULL);
+  sigaction(SIGABRT,&sigact,NULL);
+  sigaction(SIGPIPE,&sigact,NULL);
+  sigaction(SIGCHLD,&sigact,NULL);
+
   sigact.sa_handler=crash_signal_handler;
   sigaction(SIGSEGV,&sigact,NULL);
   sigaction(SIGBUS,&sigact,NULL);
+  sigaction(SIGFPE,&sigact,NULL);
+  sigaction(SIGILL,&sigact,NULL);
+
   sigact.sa_handler=SIG_IGN;
   sigaction(SIGHUP,&sigact,NULL);
+  sigaction(SIGUSR1,&sigact,NULL);
+  sigaction(SIGUSR2,&sigact,NULL);
 
 
   atexit(exit_cleanup);
