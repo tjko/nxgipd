@@ -1,4 +1,3 @@
-
 nxgipd v1.0.0beta
 =================
 
@@ -42,7 +41,7 @@ INSTALLATION
 	tar file, run configure,  make necessary changes to the Makefile,  
 	and then compile the program. You may want do something like this:
 
-		tar xzvf nxgipd-1.0.0.tar.g
+		tar xzvf nxgipd-1.0.0.tar.gz
 		cd nxgipd-1.0.0
 		./configure
 		make
@@ -81,9 +80,9 @@ SERIAL INTERFACE CONFIGURATION
 		 * Partitions Snapshot Request
 		 * Send X-10 Message (OPTIONAL)
 		 * Send Keypad Text Message (OPTIONAL)
-		 * System Status Request (OPTIONAL)
+		 * System Status Request 
 		 * Program Data Request (OPTIONAL)
-		 * Set Clock / Calendar Command (OPTIONAL)
+		 * Set Clock / Calendar Command
 		 * Primary Keypad Function with PIN (OPTIONAL)
 		 * Secondary Keypad Function (OPTIONAL)
 		 * Zone Bypass Toggle (OPTIONAL)
@@ -91,11 +90,16 @@ SERIAL INTERFACE CONFIGURATION
 
 
 HISTORY
-	v1.0.0beta - added zone status saving/restore
-		   - new command nxcmd to send commands to alarm panel
-	             (based on initial implmementation by Brian Whaley)
-		   - new option -i for nxstat to display interface status
-	v0.9.0     - first public release
+	v1.0.0beta 
+		- support for sending X-10 commands via nxcmd
+		- support for sending Zone Bypass command via nxcmd
+		- support for display custom messages on NX-148 keypads
+		  using nxcmd
+		- added zone status saving/restore
+		- new command nxcmd to send (keypad) commands to alarm panel
+		  (based on initial implmementation by Brian Whaley)
+		- new option -i for nxstat to display interface status
+	v0.9.0	- first public release
 
 
 
