@@ -413,6 +413,9 @@ int main(int argc, char **argv)
 	case NX_IPC_MSG_MESSAGE:
 	  process_keypadmsg_command(fd,config->serial_protocol,ipcmsg.data,istatus);
 	  break;
+	case NX_IPC_X10_CMD:
+	  process_x10_command(fd,config->serial_protocol,ipcmsg.data,istatus);
+	  break;
 	default:
 	  logmsg(0,"unknown IPC message received: %d",ipcmsg.msgtype);
 	}

@@ -226,6 +226,7 @@ void process_command(int fd, int protocol, const uchar *data, nx_interface_statu
 void process_keypadmsg_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
 void process_get_program_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
 void process_zone_bypass_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
+void process_x10_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
 void process_set_clock(int fd, int protocol, nx_system_status_t *astat);
 int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
 int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);

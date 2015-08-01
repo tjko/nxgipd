@@ -417,7 +417,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       uchar keypad = msg->msg[0];
       uchar key = msg->msg[1];
 
-      logmsg(1,"terminal mode keypad keystroke (keypad=%d,len=%d): %02x",keypad,msg->len,key);
+      logmsg(1,"Terminal Mode keypad keystroke received (keypad=%d,len=%d): %02x",keypad,msg->len,key);
     }
     break;
 
@@ -578,7 +578,7 @@ void process_keypadmsg_command(int fd, int protocol, const uchar *data, nx_inter
   }
 
   if ((istatus->sup_cmd_msgs[1] & 0x08) == 0) {
-    logmsg(0,"Send Keypad Text Message not supported. Message not sent: '%s'",
+    logmsg(0,"Send Keypad Text Message not enabled. Message not sent: '%s'",
 	   (char*)&data[2]);
     return;
   }
@@ -756,7 +756,7 @@ void process_get_program_command(int fd, int protocol, const uchar *data, nx_int
   loc = (data[1]&0xf)<<8 | data[2];
 
   if ((istatus->sup_cmd_msgs[2] & 0x01) == 0) {
-    logmsg(0,"Program Data Request not supported. Message not sent (device=%d,loc=%d).",
+    logmsg(0,"Program Data Request not enabled. Message not sent (device=%d,loc=%d).",
 	   data[0],loc);
     return;
   }
@@ -812,6 +812,46 @@ void process_zone_bypass_command(int fd, int protocol, const uchar *data, nx_int
     logmsg(0,"Zone Bypass Toggle failure: Zone=%d",data[0]+1);
   }
 
+
+}
+
+
+
+void process_x10_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+{
+  nxmsg_t msgout,msgin;
+  int ret;
+  uchar house;
+  int unit;
+
+  if (!data || !istatus) return;
+
+
+  if ((istatus->sup_cmd_msgs[1] & 0x02) == 0) {
+    logmsg(0,"Send X-10 Message not enabled. Message not sent (Zone=%d).",
+	   data[0]+1);
+    return;
+  }
+
+
+  msgout.msgnum=NX_X10_SEND_MSG;
+  msgout.len=4;
+  msgout.msg[0]=(data[0] & 0x0f);
+  msgout.msg[1]=(data[1] & 0x0f);;
+  msgout.msg[2]=data[2];
+
+  house=msgout.msg[0] + 'A';
+  unit=msgout.msg[1] + 1;
+
+
+  logmsg(2,"Sending X-10 Message (house=%c, unit=%d, func=%02x)...",house,unit,data[2]);
+
+  ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
+  if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
+    logmsg(1,"Send X-10 Message success: House=%c, Unit=%d, Function=%02x",house,unit,data[2]);
+  } else {
+    logmsg(0,"Send X-10 Message failure: House=%c, Unit=%d, Function=%02x",house,unit,data[2]);
+  }
 
 }
 
