@@ -112,6 +112,7 @@ printable.man:
 install.man: install.dirs
 	$(INSTALL) -m 644 $(PKGNAME).1 $(INSTALL_ROOT)/$(mandir)/man1/$(PKGNAME).1
 	$(INSTALL) -m 644 nxstat.1 $(INSTALL_ROOT)/$(mandir)/man1/nxstat.1
+	$(INSTALL) -m 644 nxcmd.1 $(INSTALL_ROOT)/$(mandir)/man1/nxcmd.1
 
 install.dirs:
 	$(INSTALL) -d -m 755 $(INSTALL_ROOT)/$(mandir)/man1
