@@ -99,18 +99,32 @@ void logmsg(int priority, char *format, ...)
 int openserialdevice(const char *device, const char *speed)
 {
   int fd;
-  int i;
+  int baudrate;
   struct termios t;
   speed_t spd;
 
+
+  if (sscanf(speed,"%d",&baudrate) != 1) {
+    warn("invalid serial speed setting: %s",speed);
+    return -1;
+  }
+
   fd = open(device,O_RDWR|O_NONBLOCK);
-  if (fd < 0) die("failed to open %s (errno=%d)\n",device,errno);
+  if (fd < 0) {
+    warn("failed to open %s (errno=%d)\n",device,errno);
+    return -2;
+  }
 
-  if (tcgetattr(fd,&t)) die("tcgetattr() failed on %s\n",device);
+  if (tcgetattr(fd,&t)) {
+    warn("tcgetattr() failed on %s\n",device);
+    return -3;
+  }
 
-  if (sscanf(speed,"%d",&i) != 1) die("invalid serial speed setting: %s",speed);
 
-  switch (i) {
+  switch (baudrate) {
+  case 9600:
+    spd=B9600;
+    break;
   case 19200:
     spd=B19200;
     break;
@@ -124,15 +138,20 @@ int openserialdevice(const char *device, const char *speed)
     spd=B115200;
     break;
     
-  default: 
+  default:
     spd=B9600;
+    warn("invalid serial port speed setting (%d) falling back to default",
+	 speed);
   }
 
   cfmakeraw(&t); 
   cfsetspeed(&t,spd);
   t.c_cflag |= CLOCAL;
 
-  if (tcsetattr(fd,TCSANOW,&t)) die("tcsetattr() failed on %s\n",device);
+  if (tcsetattr(fd,TCSANOW,&t)) {
+    warn("tcsetattr() failed on %s\n",device);
+    return -4;
+  }
 
   return fd;
 }

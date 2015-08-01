@@ -44,7 +44,7 @@ nx_configuration_t *config = &configuration;
 
 void crash_signal_handler(int sig)
 {
-  logmsg(0,"program crashed (sig=%d)", sig);
+  logmsg(0,"program crashed: signal=%d (%s)", sig, strsignal(sig));
 
   if (shm != NULL) 
     release_shared_memory(shmid,shm);
@@ -57,7 +57,7 @@ void crash_signal_handler(int sig)
 
 void signal_handler(int sig)
 {
-  logmsg(0,"program terminated (sig=%d)",sig);
+  logmsg(0,"program terminated: signal=%d (%s)", sig, strsignal(sig));
   exit(1);
 }
 
@@ -65,7 +65,7 @@ void signal_handler(int sig)
 void exit_cleanup()
 {
   logmsg(3,"exit_cleanup()");
-  if (config->status_file) {
+  if (config->status_file && astat) {
     int r = save_status_xml(config->status_file, astat);
     if (r != 0) {
       logmsg(0,"failed to save alarm status: %s (%d)",config->status_file,r);
@@ -194,9 +194,9 @@ int main(int argc, char **argv)
 
   printf("Loading configuration...\n");
   if (load_config(config_file,config,1))
-    die("failed to open configuration file: %s",config_file);
+    die("Failed to open configuration file: %s",config_file);
 
-  if (config->status_file) {
+  if (config->status_file && verbose_mode) {
     printf("Using alarm status file: %s\n",config->status_file);
   }
 
@@ -218,24 +218,25 @@ int main(int argc, char **argv)
   atexit(exit_cleanup);
 
 
-  /* initialize shared memory segment */
+  /* initialize IPC shared memory segment */
   if (init_shared_memory(config->shmkey,config->shmmode,sizeof(nx_shm_t),&shmid,&shm))
-    die("failed to initialize IPC shared memory segment");
+    die("Failed to initialize IPC shared memory segment");
   istatus=&shm->intstatus;
   astat=&shm->alarmstatus;
   if (verbose_mode) 
     printf("IPC shm: key=0x%08x id=%d",config->shmkey,shmid);
 
+  /* initialize IPC message queue */
   if ((msgid=init_message_queue(config->msgkey,config->msgmode)) < 0) 
-    die("failed to initialize IPC message queue");
+    die("Failed to initialize IPC message queue");
   if (verbose_mode)
     printf("IPC msg: key=0x%08x id=%d",config->msgkey,msgid); 
 
 
 
-  printf("Opening device %s\n",config->serial_device);
-  fd = openserialdevice(config->serial_device,config->serial_speed);
-
+  printf("Opening serial port: %s\n",config->serial_device);
+  if ((fd = openserialdevice(config->serial_device,config->serial_speed)) < 0)
+    die("Failed to open serial port");
 
 
   printf("Establishing communications...\n");
@@ -250,7 +251,7 @@ int main(int argc, char **argv)
   msgout.len=1;
   retry=0;
   do {
-    ret=nx_send_message(fd,config->serial_protocol,&msgout,5,2,NX_INT_CONFIG_MSG,&msgin);
+    ret=nx_send_message(fd,config->serial_protocol,&msgout,5,3,NX_INT_CONFIG_MSG,&msgin);
     if (ret < 0) logmsg(0,"Failed to send message\n");
     if (ret == 0) logmsg(0,"No response from NX device\n");
   } while (ret != 1 && retry++ < 3);
@@ -263,13 +264,13 @@ int main(int argc, char **argv)
   } else {
     die("failed to estabilish communications with NX device");
   }
-
   process_message(&msgin,1,0,astat,istatus);
   printf("Interface version v%s detected\n",istatus->version);
 
 
-
   if (scan_mode > 0) {
+    /* scan of device or bus requested */
+
     if ( (istatus->sup_cmd_msgs[2] & 0x01) == 0 ) 
       die("Program Data Request command not enabled.");
 
@@ -309,8 +310,8 @@ int main(int argc, char **argv)
     close(fd);
   }
 
+  /* create pid file */
   shm->pid=getpid();
-  
   if (pid_file) {
     FILE *fp = fopen(pid_file,"w");
     if (!fp) die("failed to create pid file: %s",pid_file);
@@ -344,13 +345,14 @@ int main(int argc, char **argv)
   }
 
 
-
   logmsg(0,"Waiting for messages");
   shm->daemon_started=time(NULL);
   shm->last_updated=time(NULL);
 
   /* main process loop */
   while (1) {
+
+    /* wait for message to come in (or timeout)... */
     ret=nx_receive_message(fd,config->serial_protocol,&msgin,3);
     if (ret < -1) {
       logmsg(0,"error reading message");
@@ -364,7 +366,7 @@ int main(int argc, char **argv)
 	//firmware bug panel ignores ACK for this message...
       }
     } else {
-      /* printf("timeout\n"); */
+      /* no message received (timeout), check if there is anything else to do... */
 
       time_t t = time(NULL);
 
@@ -419,6 +421,7 @@ int main(int argc, char **argv)
       }
 
     }
+
     fflush(stdout);
     shm->last_updated=time(NULL);
   }
