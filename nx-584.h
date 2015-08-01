@@ -134,6 +134,16 @@
 #define NX_KEYPAD_KEY_DOWN             0x15
 
 
+/* X-10 Message Functions */
+#define NX_X10_ALL_UNITS_OFF           0x08
+#define NX_X10_ALL_LIGHTS_ON           0x18
+#define NX_X10_ON                      0x28
+#define NX_X10_OFF                     0x38
+#define NX_X10_DIM                     0x48
+#define NX_X10_BRIGHT                  0x58
+#define NX_X10_ALL_LIGHTS_OFF          0x68
+ 
+
 typedef unsigned char uchar;
 typedef unsigned short int ushort;
 typedef unsigned int uint;

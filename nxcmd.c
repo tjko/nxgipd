@@ -97,31 +97,31 @@ void print_usage()
   fprintf(stderr,"Usage: %s [OPTIONS] <command>\n\n",program_name);
   fprintf(stderr,
 	  " Commands (no PIN required):\n"
-	  "  exit                      Exit (one button arm / toggle instant)\n"
-	  "  stay                      Stay (one button arm / toggle interiors)\n"
-	  "  chime                     Toggle chime mode\n"
-	  "  bypass                    Bypass interiors\n"
-	  "  grpbypass                 Group bypass\n"
-	  "  smokereset                Smoke detector reset\n"
-	  "  sounder                   Start keypad sounder\n\n"
-	  "  zonebypass <n>            Toggle zone bypass status\n"
-	  "  message <n> <line1> <line2> <sec>\n"
-	  "                            Display text message on keypad\n"
-	  "  getprogram <dev> <loc>    Display program data from device\n\n"
+	  "  exit                               Exit (one button arm / toggle instant)\n"
+	  "  stay                               Stay (one button arm / toggle interiors)\n"
+	  "  chime                              Toggle chime mode\n"
+	  "  bypass                             Bypass interiors\n"
+	  "  grpbypass                          Group bypass\n"
+	  "  smokereset                         Smoke detector reset\n"
+	  "  sounder                            Start keypad sounder\n\n"
+	  "  zonebypass <n>                     Toggle zone bypass status\n"
+	  "  x10 <house> <unit> <func>          Send X-10 Message/Command\n"
+	  "  message <n> <line1> <line2> <sec>  Display text message on keypad\n"
+	  "  getprogram <dev> <loc>             Display program data from device\n\n"
 	  " Commands (PIN required):\n"
-	  "  armaway                   Arm in Away mode\n"
-	  "  armstay                   Arm in Stay mode\n"
- 	  "  disarm                    Disarm partition\n"
-	  "  silence                   Turn off any sounder or alarm\n"
-	  "  cancel                    Cancel alarm\n"
-	  "  autoarm                   Initiate auto-arm\n\n"
+	  "  armaway                            Arm in Away mode\n"
+	  "  armstay                            Arm in Stay mode\n"
+ 	  "  disarm                             Disarm partition\n"
+	  "  silence                            Turn off any sounder or alarm\n"
+	  "  cancel                             Cancel alarm\n"
+	  "  autoarm                            Initiate auto-arm\n\n"
 	  " Options:\n"
-	  "  --config=<configfile>     use specified config file\n"
+	  "  --config=<configfile>              use specified config file\n"
 	  "  -c <configfile>\n"
-	  "  --partition=<n>, -p <n>   partition for the command (default 1)\n"
-	  "  --help, -h                display this help and exit\n"
-	  "  --verbose, -v             enable verbose output to stdout\n"
-	  "  --version, -V             print program version\n"
+	  "  --partition=<n>, -p <n>            partition for the command (default 1)\n"
+	  "  --help, -h                         display this help and exit\n"
+	  "  --verbose, -v                      enable verbose output to stdout\n"
+	  "  --version, -V                      print program version\n"
 	  "\n");
 }
 
@@ -143,6 +143,9 @@ int main(int argc, char **argv)
   int location = -1;
   int keypad = -1;
   int msgtime = -1;
+  int x10house = 0;
+  int x10unit = 0;
+  int x10func = 0;
   char text1[MESSAGE_LINE_LEN+1];
   char text2[MESSAGE_LINE_LEN+1];
   nx_ipc_msg_t  ipcmsg;
@@ -297,6 +300,26 @@ int main(int argc, char **argv)
       if (text2[i] == 0) text2[i]=' ';
     }
   }
+  else if (!strcasecmp(cmd,"x10")) {
+    msgtype=NX_IPC_X10_CMD;
+    if (args <= 3) 
+      die("x10 option requires house, unit, and function arguments");
+    x10house=tolower(argv[optind+1][0]) - 'a';
+    if (x10house < 0 || x10house > 15)
+      die("valid range for house code is: a..p"); 
+    if ( (sscanf(argv[optind+2],"%d",&x10unit) != 1) ||
+	 (x10unit < 1) || (x10unit > 16) )
+      die("valid range for unit code is: 1..16");
+    x10unit--;
+    if (!strcasecmp(argv[optind+3],"units-off"))  x10func=NX_X10_ALL_UNITS_OFF;
+    else if (!strcasecmp(argv[optind+3],"lights-on")) x10func=NX_X10_ALL_LIGHTS_ON;
+    else if (!strcasecmp(argv[optind+3],"lights-off")) x10func=NX_X10_ALL_LIGHTS_OFF;
+    else if (!strcasecmp(argv[optind+3],"on")) x10func=NX_X10_ON;
+    else if (!strcasecmp(argv[optind+3],"off")) x10func=NX_X10_OFF;
+    else if (!strcasecmp(argv[optind+3],"dim")) x10func=NX_X10_DIM;
+    else if (!strcasecmp(argv[optind+3],"bright")) x10func=NX_X10_BRIGHT;
+    else die ("valid function codes are: on, off, dim, bright, lights-on, lights-off, units-off");
+  }
   else {
     warn("unknown command: %s", cmd);
     print_usage();
@@ -358,6 +381,11 @@ int main(int argc, char **argv)
       ipcmsg.data[1]=msgtime;
       memcpy(&ipcmsg.data[2],text1,MESSAGE_LINE_LEN);
       memcpy(&ipcmsg.data[2+MESSAGE_LINE_LEN],text2,MESSAGE_LINE_LEN);
+      break;
+    case NX_IPC_X10_CMD:
+      ipcmsg.data[0]=x10house & 0x0f;;
+      ipcmsg.data[1]=x10unit & 0x0f;
+      ipcmsg.data[2]=x10func;
       break;
 
     default:

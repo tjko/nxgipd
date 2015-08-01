@@ -191,7 +191,7 @@ typedef struct nx_ipc_msg {
 #define NX_IPC_MSG_GET_PROG  0x02
 #define NX_IPC_MSG_BYPASS    0x03
 #define NX_IPC_MSG_MESSAGE   0x04
-
+#define NX_IPC_X10_CMD       0x05
 
 extern nx_configuration_t *config;
 extern char *program_name;
