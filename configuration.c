@@ -1,6 +1,6 @@
 /* configuration.c
  * 
- * Copyright (C) 2011 Timo Kokkonen. All Rights Reserved.
+ * Copyright (C) 2011-2015 Timo Kokkonen. All Rights Reserved.
  */
 
 #include <stdio.h>
@@ -89,6 +89,9 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
   const char *dir;
 
   if (!configfile || !config) return -1;
+
+  /* zero out the configuration structure... */
+  memset(config,0,sizeof(nx_configuration_t));
 
   configxml=load_xml_file(configfile);
   if (!configxml) return 1;
@@ -184,6 +187,28 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
     EXPAND_FILENAME(tmpstr,dir,node->value.text.string);
     config->status_file=strdup(tmpstr);
   }
+
+
+  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","alarmprogram");
+  if (node) {
+    EXPAND_FILENAME(tmpstr,dir,node->value.text.string);
+    config->alarm_program=strdup(tmpstr);
+  }
+
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","logentry");
+  if (!node) die("cannot find 'logentry' inside 'triggers' section in configuration");
+  if (sscanf(node->value.text.string,"%d",&i)==1) config->trigger_log=i;
+  else die("invalid 'logentry' setting");
+
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","partitionstatus");
+  if (!node) die("cannot find 'partitionstatus' inside 'triggers' section in configuration");
+  if (sscanf(node->value.text.string,"%d",&i)==1) config->trigger_partition=i;
+  else die("invalid 'partitionstatus' setting");
+
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","zonestatus");
+  if (!node) die("cannot find 'zonestatus' inside 'triggers' section in configuration");
+  if (sscanf(node->value.text.string,"%d",&i)==1) config->trigger_zone=i;
+  else die("invalid 'zonestatus' setting");
 
 
 

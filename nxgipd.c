@@ -43,6 +43,7 @@ nx_configuration_t *config = &configuration;
 
 
 
+
 void crash_signal_handler(int sig)
 {
   logmsg(0,"program crashed: signal=%d (%s)", sig, strsignal(sig));
@@ -69,7 +70,8 @@ void signal_handler(int sig)
   /* reaper... */
   while ((pid=waitpid(-1,&status,WNOHANG)) > 0) {
     if (WIFEXITED(status)) {
-      logmsg(1,"child process exited: pid=%u, status=%d", pid, WEXITSTATUS(status));
+      int estatus = WEXITSTATUS(status);
+      logmsg( (estatus==0?3:1),"child process exited: pid=%u, status=%d", pid, estatus);
     } 
     else if (WIFSIGNALED(status)) {
       logmsg(1,"child process terminated by signal: pid=%u, signal=%d (%s)",
@@ -227,6 +229,18 @@ int main(int argc, char **argv)
     printf("Using alarm status file: %s\n",config->status_file);
   }
 
+  config->trigger_enable=0;
+  if (strlen(config->alarm_program) > 0) {
+    if (access(config->alarm_program, X_OK) != 0) {
+      warn("cannot execute alarm program (%s): %s (%d)", 
+	   config->alarm_program, strerror(errno),errno);
+    } else {
+      config->trigger_enable=1;
+      printf("Alarm program active: %s\n", config->alarm_program);
+    }
+  } else {
+    if (verbose_mode) printf("No alarm program specified.\n");
+  }
 
 
   /* setup signal handling */

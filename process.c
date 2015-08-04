@@ -65,9 +65,14 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
       if (astat->zones[zonenum].valid) {
 	int fault = (msg->msg[5] & 0x01 ? 1:0);
+	int tamper = (msg->msg[5] & 0x02 ? 1:0);
+	int trouble = (msg->msg[5] & 0x04 ? 1:0);
 	int bypass = (msg->msg[5] & 0x08 ? 1:0);
-	int trouble = (msg->msg[5] & 0x66 ? 1:0);
+	int inhibited = (msg->msg[5] & 0x10 ? 1:0);
+	int low_battery = (msg->msg[5] & 0x20 ? 1:0);
+	int loss_supervision = (msg->msg[5] & 0x40 ? 1:0);
 	int alarm_mem = (msg->msg[6] & 0x01 ? 1:0);
+	int bypass_mem = (msg->msg[6] & 0x02 ? 1:0);
 	char tmp[255];
 	nx_zone_status_t *zone = &astat->zones[zonenum];
 	int change=0;
@@ -76,19 +81,38 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	tmp[0]=0;
 
 	CHECK_STATUS_CHANGE(fault,zone->fault,change,tmp,"Fault","Ok");
-	CHECK_STATUS_CHANGE(bypass,zone->bypass,change2,tmp,"Bypass","(Bypass)");
+	CHECK_STATUS_CHANGE(tamper,zone->tamper,change,tmp,"Tamper","(Tamper)");
 	CHECK_STATUS_CHANGE(trouble,zone->trouble,change,tmp,"Trouble","(Trouble)");
-	CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change,tmp,"Alarm Memory","(Alarm Memory)");
+	CHECK_STATUS_CHANGE(bypass,zone->bypass,change2,tmp,"Bypass","(Bypass)");
+	CHECK_STATUS_CHANGE(inhibited,zone->inhibited,change2,tmp,"Inhibited","(Inhibited)");
+	CHECK_STATUS_CHANGE(low_battery,zone->low_battery,change2,tmp,"Low Battery","(Low Battery)");
+	CHECK_STATUS_CHANGE(loss_supervision,zone->loss_supervision,change2,tmp,"Loss of Supervision","(Loss ofSupervision)");
+	CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change2,tmp,"Alarm Memory","(Alarm Memory)");
+	CHECK_STATUS_CHANGE(bypass_mem,zone->bypass_mem,change2,tmp,"Bypass Memory","(Bypass Memory)");
 
-	if (change && !init_mode) {
+	if (zone->partition_mask != msg->msg[1]) zone->partition_mask=msg->msg[1];
+	if (zone->type_flags[0] != msg->msg[2]) zone->type_flags[0]=msg->msg[2];
+	if (zone->type_flags[1] != msg->msg[3]) zone->type_flags[1]=msg->msg[3];
+	if (zone->type_flags[2] != msg->msg[4]) zone->type_flags[2]=msg->msg[4];
+
+
+	if ((change || change2) && !init_mode) {
 	  logmsg(0,"%s zone status: %02d %s: %s",
 		  (zone->bypass ? "bypassed" : (astat->armed ? "armed" : "normal")),
 		  zonenum+1,
 		  zone->name,
 		  tmp);
-	  zone->last_updated=msg->r_time;
+	  if (change) {
+	    zone->last_tripped=msg->r_time;
+	    zone->last_updated=msg->r_time;
+	    if (config->trigger_enable && config->trigger_zone > 0)
+	      run_zone_trigger(zonenum+1,zone->name,fault,bypass,trouble,tamper,astat->armed,tmp);
+	  }
+	  if (change2)
+	    if (config->trigger_enable && config->trigger_zone > 1)
+	      run_zone_trigger(zonenum+1,zone->name,fault,bypass,trouble,tamper,astat->armed,tmp);
 	}
-	if (zone->last_updated <=0) zone->last_updated=msg->r_time;
+      	if (zone->last_updated <=0) zone->last_updated=msg->r_time;
       }
     }
     break;
@@ -143,15 +167,18 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	char tmp[1024];
 	nx_partition_status_t *part = &astat->partitions[partnum];
 	int change = 0;
+	int change2 = 0;
 	int p,armed_count;
 
 	tmp[0]=0;
-	
+
+
+	/* same statuses as we get from partitions snapshot message */
+
 	/* armed */
 	CHECK_STATUS_CHANGE((msg->msg[1]&0x40?1:0),part->armed,change,tmp,"Armed","Not Armed");
 	/* ready */
-	CHECK_STATUS_CHANGE((msg->msg[6]&0x04?1:0),part->ready,change,tmp,"Ready","Not Ready");
-
+	CHECK_STATUS_CHANGE((msg->msg[6]&0x04?1:0),part->ready,change2,tmp,"Ready","Not Ready");
 	/* stay mode */
 	CHECK_STATUS_CHANGE((msg->msg[3]&0x04?1:0),part->stay_mode,change,tmp,"Stay Mode","(Stay Mode)");
 	/* chime mode */
@@ -159,31 +186,47 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	/* entry delay */
 	CHECK_STATUS_CHANGE((msg->msg[3]&0x10?1:0),part->entry_delay,change,tmp,"Entry Delay","(Entry Delay)");
 	/* exit delay */
-	CHECK_STATUS_CHANGE((msg->msg[3]&0x40?1:0),part->exit_delay,change,tmp,"Exit Delay","(Exit Delay)");
+	CHECK_STATUS_CHANGE((msg->msg[3]&0xc0?1:0),part->exit_delay,change,tmp,"Exit Delay","(Exit Delay)");
 	/* previous alarm */
 	CHECK_STATUS_CHANGE((msg->msg[2]&0x01?1:0),part->prev_alarm,change,tmp,"Previous Alarm","(Previous Alarm)");
 
-	/* fire */
-	CHECK_STATUS_CHANGE((msg->msg[1]&0x04?1:0),part->fire,change,tmp,"Fire","(Fire)");
+	/* additional statuses...*/
+
 	/* fire trouble */
 	CHECK_STATUS_CHANGE((msg->msg[1]&0x02?1:0),part->fire_trouble,change,tmp,"Fire Trouble","(Fire Trouble)");
+	/* fire */
+	CHECK_STATUS_CHANGE((msg->msg[1]&0x04?1:0),part->fire,change,tmp,"Fire","(Fire)");
+	/* buzzer on */
+	CHECK_STATUS_CHANGE((msg->msg[1]&0x08?1:0),part->buzzer_on,change,tmp,"Buzzer On","(Buzzer On)");
 	/* instant */
 	CHECK_STATUS_CHANGE((msg->msg[1]&0x80?1:0),part->instant,change,tmp,"Instant","(Instant)");
+
+	/* siren on */
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x02?1:0),part->siren_on,change,tmp,"Siren On","(Siren On)");
+	/* steady siren on */
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x04?1:0),part->steadysiren_on,change,tmp,"Steady Siren On","(Steady Siren On)");
+	/* alarm memory */
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x08?1:0),part->alarm_mem,change,tmp,"Alarm Memory","(Alarm Memory)");
 	/* tamper */
 	CHECK_STATUS_CHANGE((msg->msg[2]&0x10?1:0),part->tamper,change,tmp,"Tamper","(Tamper)");
-	/* valid pin */
-	CHECK_STATUS_CHANGE((msg->msg[6]&0x10?1:0),part->valid_pin,change,tmp,"Valid PIN","(Valid PIN)");
 	/* cancel entered */
 	CHECK_STATUS_CHANGE((msg->msg[2]&0x20?1:0),part->cancel_entered,change,tmp,"Cancel Entered","(Cancel Entered)");
 	/* code entered */
 	CHECK_STATUS_CHANGE((msg->msg[2]&0x40?1:0),part->code_entered,change,tmp,"Code Entered","(Code Entered)");
 
-	/* buzzer on */
-	CHECK_STATUS_CHANGE((msg->msg[1]&0x08?1:0),part->buzzer_on,change,tmp,"Buzzer On","(Buzzer On)");
-	/* siren on */
-	CHECK_STATUS_CHANGE((msg->msg[2]&0x02?1:0),part->siren_on,change,tmp,"Siren On","(Siren On)");
-	/* steady siren on */
-	CHECK_STATUS_CHANGE((msg->msg[2]&0x04?1:0),part->steadysiren_on,change,tmp,"Steady Siren On","(Steady Siren On)");
+	/* silent exit enabled */
+	CHECK_STATUS_CHANGE((msg->msg[3]&0x02?1:0),part->silent_exit,change,tmp,"Silent Exit","(Silent Exit)");
+
+	/* sensor low battery */
+	CHECK_STATUS_CHANGE((msg->msg[4]&0x40?1:0),part->low_battery,change,tmp,"Low Battery","(Low Battery)");
+	/* sensor loss of supervision */
+	CHECK_STATUS_CHANGE((msg->msg[4]&0x80?1:0),part->lost_supervision,change,tmp,"Lost Supervision","(Lost Supervision)");
+
+
+	/* zones bypassed */
+	CHECK_STATUS_CHANGE((msg->msg[6]&0x01?1:0),part->zones_bypassed,change,tmp,"Zones Bypassed","(Zones Bypassed)");
+	/* valid pin */
+	CHECK_STATUS_CHANGE((msg->msg[6]&0x10?1:0),part->valid_pin,change,tmp,"Valid PIN","(Valid PIN)");
 	/* chime on */
 	CHECK_STATUS_CHANGE((msg->msg[6]&0x20?1:0),part->chime_on,change,tmp,"Chime On","(Chime On)");
 	/* error beep on */
@@ -191,8 +234,11 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	/* tone on */
 	CHECK_STATUS_CHANGE((msg->msg[6]&0x80?1:0),part->tone_on,change,tmp,"Tone On","(Tone On)");
 
-	/* zones bypassed */
-	CHECK_STATUS_CHANGE((msg->msg[6]&0x01?1:0),part->zones_bypassed,change,tmp,"Zones Bypassed","(Zones Bypassed)");
+	/* alarm sent */
+	CHECK_STATUS_CHANGE((msg->msg[7]&0x1c?1:0),part->alarm_sent,change,tmp,"Alarm Sent","(Alarm Sent)");
+	/* keyswitch armed */
+	CHECK_STATUS_CHANGE((msg->msg[7]&0x40?1:0),part->keyswitch_armed,change,tmp,"Keyswitch Armed","(Keyswitch Armed)");
+
 	
 
 	/* last user */
@@ -205,9 +251,18 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  strcat(tmp,tstr);
 	}
 
-	if (change && !init_mode) {
+	if ((change || change2) && !init_mode) {
 	  logmsg(0,"Partition %d status change: %s",partnum+1,tmp);
 	  part->last_updated=msg->r_time;
+
+	  if (config->trigger_enable && 
+	      ( (change && config->trigger_zone > 0) ||
+	        (change2 && config->trigger_zone > 1) ) 
+	      ) {
+	    run_partition_trigger(partnum+1,tmp,part->armed,part->ready,
+				  part->stay_mode,part->chime_mode,part->entry_delay,
+				  part->exit_delay,part->prev_alarm);
+	  }
 	}
 
 	/* update global armed flag... */

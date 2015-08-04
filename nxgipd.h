@@ -10,7 +10,8 @@
 
 #define PRGNAME "nxgipd"
 
-#define SHMVERSION "42.1"
+/* shared memory version, update if shared memory locations change... */
+#define SHMVERSION "42.2"
 
 #ifndef CONFIG_FILE
 #define CONFIG_FILE "/etc/nxgipd.conf"
@@ -41,13 +42,18 @@ typedef struct nx_partition_status {
   char valid_pin;
   char cancel_entered;
   char code_entered;
-  
+  char alarm_mem;
   char buzzer_on;
   char siren_on;
   char steadysiren_on;
   char chime_on;
   char errorbeep_on;
   char tone_on;
+  char low_battery;
+  char lost_supervision;
+  char silent_exit;
+  char alarm_sent;
+  char keyswitch_armed;
 
   char zones_bypassed;
 
@@ -58,10 +64,19 @@ typedef struct nx_zone_status {
   char valid;
   char name[NX_ZONE_NAME_MAXLEN+1];
   char fault;
-  char bypass;
+  char tamper;
   char trouble;
+  char bypass;
+  char inhibited;
+  char low_battery;
+  char loss_supervision;
   char alarm_mem;
+  char bypass_mem;
 
+  uchar partition_mask;
+  uchar type_flags[3];
+
+  time_t last_tripped;
   time_t last_updated;
   time_t update_interval;
 } nx_zone_status_t;
@@ -160,6 +175,12 @@ typedef struct nx_configuration {
   char *log_file;
   char *status_file;
 
+  char *alarm_program;
+  uchar trigger_enable;
+  uchar trigger_log;
+  uchar trigger_partition;
+  uchar trigger_zone;
+  
   uint  shmkey;
   int   shmmode;
   uint  msgkey;
@@ -230,6 +251,14 @@ void process_x10_command(int fd, int protocol, const uchar *data, nx_interface_s
 void process_set_clock(int fd, int protocol, nx_system_status_t *astat);
 int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
 int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
+
+/* trigger.c */
+void  run_zone_trigger(int zonenum,const char* zonename, int fault, int bypass, int trouble,
+		       int tamper, int armed, const char* zonestatus);
+void run_partition_trigger(int partnum, const char* partitionstatus,int armed, int ready,
+			   int stay, int chime, int entryd, int exitd, int palarm);
+
+
 
 #endif
 
