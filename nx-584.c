@@ -462,9 +462,11 @@ int nx_receive_message(int fd, int protocol, nxmsg_t *msg, int timeout)
     FD_SET(fd,&rfds);
     tv.tv_sec=0;
     tv.tv_usec=200000;
-    ret = select(fd+1,&rfds,NULL,NULL,&tv);
+    do {
+      ret = select(fd+1,&rfds,NULL,NULL,&tv);
+    } while (ret == -1 && errno==EINTR);
     if (ret < 0) {
-      logmsg(2,"nx_receive_message(): select failed: %d",errno);
+      logmsg(2,"nx_receive_message(): select failed: %d (%s)",errno,strerror(errno));
       return -2;
     }
 
