@@ -257,6 +257,7 @@ void  run_zone_trigger(int zonenum,const char* zonename, int fault, int bypass, 
 		       int tamper, int armed, const char* zonestatus);
 void run_partition_trigger(int partnum, const char* partitionstatus,int armed, int ready,
 			   int stay, int chime, int entryd, int exitd, int palarm);
+void run_log_trigger(nx_log_event_t *e);
 
 
 

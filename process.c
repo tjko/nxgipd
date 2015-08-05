@@ -496,6 +496,13 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       e->min=msg->msg[8];
       
       logmsg((NX_IS_NONREPORTING_EVENT(e->type)?1:0),"%s",nx_log_event_str(e));
+
+      if (config->trigger_enable &&
+	  ( ((config->trigger_log > 0) && NX_IS_REPORTING_EVENT(e->type)) ||
+	    ((config->trigger_log > 1) && (e->type==40 || e->type==41)) ||
+	    (config->trigger_log > 2) ) ) {
+	run_log_trigger(e);
+      }
     }
     break;
 

@@ -104,6 +104,7 @@ void run_trigger_program(const char **envv)
     }							
 
 
+
 void run_zone_trigger(int zonenum,const char* zonename, int fault, int bypass, int trouble,
 		       int tamper, int armed, const char* zonestatus)
 {
@@ -126,6 +127,7 @@ void run_zone_trigger(int zonenum,const char* zonename, int fault, int bypass, i
 
   run_trigger_program((const char**)env);
 
+  /* free the strings allocated earlier */
   e=env;
   while (*e) {
     free(*e);
@@ -133,7 +135,6 @@ void run_zone_trigger(int zonenum,const char* zonename, int fault, int bypass, i
   }
 
 }
-
 
 
 void run_partition_trigger(int partnum, const char* partitionstatus,int armed, int ready,
@@ -159,6 +160,57 @@ void run_partition_trigger(int partnum, const char* partitionstatus,int armed, i
 
   run_trigger_program((const char**)env);
 
+
+  /* free the strings allocated earlier */
+  e=env;
+  while (*e) {
+    free(*e);
+    e++;
+  }
+
+}
+
+
+void run_log_trigger(nx_log_event_t *log)
+{
+  char* env[MAX_TRIG_ENV+1];
+  int envc = 0;
+  char tmp[255],**e;
+
+  logmsg(3,"run_log_trigger() called");
+
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_TYPE=%s","log");
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_STATUS=%s",nx_log_event_text(log->type));
+  if (nx_log_event_partinfo(log->type)) 
+    BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_PARTITION=%d",log->part+1);
+  
+  switch (nx_log_event_valtype(log->type)) {
+  case 'Z':
+    BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_ZONE=%d",log->num+1);
+    break;
+  case 'U':
+    BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_USER=%d",log->num);
+    break;
+  case 'D':
+    BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_DEVICE=%d",log->num);
+    break;
+
+  default:
+    break;
+  }
+
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_TYPE=%d",log->type);
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_NUM=%d",log->no+1);
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_LOGSIZE=%d",log->logsize);
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_MONTH=%d",log->month);
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_DAY=%d",log->day);
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_HOUR=%02d",log->hour);
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_LOG_MIN=%02d",log->min);
+  env[envc]=NULL;
+
+  run_trigger_program((const char**)env);
+
+  /* free the strings allocated earlier */
   e=env;
   while (*e) {
     free(*e);
