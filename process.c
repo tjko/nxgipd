@@ -96,21 +96,23 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	if (zone->type_flags[2] != msg->msg[4]) zone->type_flags[2]=msg->msg[4];
 
 
-	if ((change || change2) && !init_mode) {
-	  logmsg(0,"%s zone status: %02d %s: %s",
-		  (zone->bypass ? "bypassed" : (astat->armed ? "armed" : "normal")),
-		  zonenum+1,
-		  zone->name,
-		  tmp);
-	  if (change) {
-	    zone->last_tripped=msg->r_time;
-	    zone->last_updated=msg->r_time;
-	    if (config->trigger_enable && config->trigger_zone > 0)
+	if (change || change2) {
+	  zone->last_updated=msg->r_time;
+	  if (!init_mode) {
+	    logmsg(0,"%s zone status: %02d %s: %s",
+		   (zone->bypass ? "bypassed" : (astat->armed ? "armed" : "normal")),
+		   zonenum+1,
+		   zone->name,
+		   tmp);
+
+	    if (change)
+	      zone->last_tripped=msg->r_time;
+
+	    if (config->trigger_enable && 
+		( (change && config->trigger_zone > 0) ||
+		  (config->trigger_zone > 1) ) )
 	      run_zone_trigger(zonenum+1,zone->name,fault,bypass,trouble,tamper,astat->armed,tmp);
 	  }
-	  if (change2)
-	    if (config->trigger_enable && config->trigger_zone > 1)
-	      run_zone_trigger(zonenum+1,zone->name,fault,bypass,trouble,tamper,astat->armed,tmp);
 	}
       	if (zone->last_updated <=0) zone->last_updated=msg->r_time;
       }
@@ -127,6 +129,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	if (astat->zones[zonenum].valid) {
 	  char tmp[255];
 	  int change = 0;
+	  int change2 = 0;
 	  int fault, bypass, trouble, alarm_mem;
 	  nx_zone_status_t *zone = &astat->zones[zonenum];
 	  uchar s = msg->msg[1+((zonenum-offset)/2)];
@@ -140,17 +143,27 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  tmp[0]=0;
 
 	  CHECK_STATUS_CHANGE(fault,zone->fault,change,tmp,"Fault","Ok");
-	  CHECK_STATUS_CHANGE(bypass,zone->bypass,change,tmp,"Bypass","(Bypass)");
+	  CHECK_STATUS_CHANGE(bypass,zone->bypass,change2,tmp,"Bypass","(Bypass)");
 	  CHECK_STATUS_CHANGE(trouble,zone->trouble,change,tmp,"Trouble","(Trouble)");
-	  CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change,tmp,"Alarm Memory","(Alarm Memory)");
+	  CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change2,tmp,"Alarm Memory","(Alarm Memory)");
 	  
-	  if (change) {
-	    logmsg(0,"%s zone status (snapshot): %02d %s: %s",
-		   (zone->bypass ? "bypassed" : (astat->armed ? "armed" : "normal")),
-		   zonenum+1,
-		   zone->name,
-		   tmp);
+	  if (change || change2) {
 	    zone->last_updated=msg->r_time;
+	    if (!init_mode) {
+	      logmsg(0,"%s zone status (snapshot): %02d %s: %s",
+		     (zone->bypass ? "bypassed" : (astat->armed ? "armed" : "normal")),
+		     zonenum+1,
+		     zone->name,
+		     tmp);
+	      
+	      if (change)
+		zone->last_tripped=msg->r_time;
+
+	      if (config->trigger_enable && 
+		  ( (change && config->trigger_zone > 0) ||
+		    (config->trigger_zone > 1) ) )
+		run_zone_trigger(zonenum+1,zone->name,fault,bypass,trouble,zone->tamper,astat->armed,tmp);
+	    }
 	  }
 	}
       }
@@ -251,17 +264,19 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  strcat(tmp,tstr);
 	}
 
-	if ((change || change2) && !init_mode) {
-	  logmsg(0,"Partition %d status change: %s",partnum+1,tmp);
+	if (change || change2) {
 	  part->last_updated=msg->r_time;
+	  if (!init_mode) {
+	    logmsg(0,"Partition %d status change: %s",partnum+1,tmp);
 
-	  if (config->trigger_enable && 
-	      ( (change && config->trigger_zone > 0) ||
-	        (change2 && config->trigger_zone > 1) ) 
-	      ) {
-	    run_partition_trigger(partnum+1,tmp,part->armed,part->ready,
-				  part->stay_mode,part->chime_mode,part->entry_delay,
-				  part->exit_delay,part->prev_alarm);
+	    if (config->trigger_enable && 
+		( (change && config->trigger_zone > 0) ||
+		  (change2 && config->trigger_zone > 1) ) 
+		) {
+	      run_partition_trigger(partnum+1,tmp,part->armed,part->ready,
+				    part->stay_mode,part->chime_mode,part->entry_delay,
+				    part->exit_delay,part->prev_alarm);
+	    }
 	  }
 	}
 
@@ -287,6 +302,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	unsigned char t;
 	nx_partition_status_t *part = &astat->partitions[i]; 
 	int change = 0;
+	int change2 = 0;
 	
 	if (part->valid != v) {
 	  part->valid=v;
@@ -303,7 +319,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  
 	  /* ready */
 	  t=(s & 0x02 ? 1:0);
-	  CHECK_STATUS_CHANGE(t,part->ready,change,tmp,"Ready","Not Ready");
+	  CHECK_STATUS_CHANGE(t,part->ready,change2,tmp,"Ready","Not Ready");
 	  
 	  /* stay mode */
 	  t=(s & 0x08 ? 1:0);
@@ -326,9 +342,20 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  CHECK_STATUS_CHANGE(t,part->prev_alarm,change,tmp,"Previous Alarm","(Previous Alarm)");
 
 	  
-	  if (change) {
-	    logmsg(0,"Partition %d status change: %s",i+1,tmp);
+	  if (change || change2) {
 	    part->last_updated=msg->r_time;
+	    if (!init_mode) {
+	      logmsg(0,"Partition %d status change: %s",i+1,tmp);
+
+	      if (config->trigger_enable && 
+		  ( (change && config->trigger_zone > 0) ||
+		    (change2 && config->trigger_zone > 1) ) 
+		  ) {
+		run_partition_trigger(i+1,tmp,part->armed,part->ready,
+				      part->stay_mode,part->chime_mode,part->entry_delay,
+				      part->exit_delay,part->prev_alarm);
+	      }
+	    }
 	  }
 	}
       }
