@@ -125,6 +125,51 @@ const char* nx_timestampstr(time_t t)
 }
 
 
+const char* nx_log_event_text(uchar eventnum)
+{
+  static char str[256];
+  int i=0;
+
+  while(nx_log_event_types[i].description) {
+    if (nx_log_event_types[i].type == (eventnum & 0x7f))
+      return nx_log_event_types[i].description;
+    i++;
+  }
+
+  snprintf(str,sizeof(str),"Unknown log event (%02x)", eventnum);
+  return str;
+}
+
+
+int nx_log_event_partinfo(uchar eventnum)
+{
+  int i=0;
+
+  while(nx_log_event_types[i].description) {
+    if (nx_log_event_types[i].type == (eventnum & 0x7f)) 
+      return nx_log_event_types[i].partition;
+    i++;
+  }
+
+  return 0;
+}
+
+
+char nx_log_event_valtype(uchar eventnum)
+{
+  int i=0;
+
+  while(nx_log_event_types[i].description) {
+    if (nx_log_event_types[i].type == (eventnum & 0x7f)) 
+      return nx_log_event_types[i].valtype;
+    i++;
+  }
+
+  return 'N';
+}
+
+
+
 const char* nx_log_event_str(const nx_log_event_t *event)
 {
   static char str[256];

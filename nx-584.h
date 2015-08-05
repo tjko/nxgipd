@@ -13,6 +13,7 @@
 #define NX_MSG_ACK_FLAG       0x80
 #define NX_IS_ACKMSG(n)  ((n & NX_MSG_ACK_FLAG) == NX_MSG_ACK_FLAG)
 #define NX_IS_NONREPORTING_EVENT(type)  ( (type & 0x80) == 0x80 ? 1 : 0 ) 
+#define NX_IS_REPORTING_EVENT(type)  ( (type & 0x80) == 0x80 ? 0 : 1 ) 
 
 #define NX_PARTITIONS_MAX        8
 #define NX_ZONES_MAX             256
@@ -196,6 +197,11 @@ int nx_receive_message(int fd, int protocol, nxmsg_t *msg, int timeout);
 int nx_send_message(int fd, int protocol, nxmsg_t *msg, int timeout, int retry, unsigned char replycmd, nxmsg_t *replymsg);
 const char* nx_timestampstr(time_t t);
 const char* nx_log_event_str(const nx_log_event_t *event);
+const char* nx_log_event_text(uchar eventnum);
+int nx_log_event_partinfo(uchar eventnum);
+char nx_log_event_valtype(uchar eventnum);
+
+
 
 void logmsg(int priority, char *format, ...);
 
