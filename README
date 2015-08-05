@@ -9,6 +9,10 @@ to be run in on almost any hardware that runs Linux (or feel free to port
 this to your favorite OS :-)
 nxgipd daemon process is meant to continuously monitor the alarm panel and
 log any activity into local log file and/or to syslog.
+Daemon process can run designated script as responses to different events
+(such as alarm, zone tripped, etc.), making it easy to perform custom
+actions or monitor the alarm yourself.
+
 Command line tools nxstat and nxcmd allow real-time polling of the alarm
 status and interact with the alarm.
 
@@ -16,6 +20,12 @@ NOTE! Before you can use this program you typically need to first install
 NX-584E (home automation) module or enable built-in serial port (NX-8E panel).
 If you don't know the program code (PIN) for your panel, you may need to get
 your alarm provider to do this for you.
+
+This program does not interfere with alarm monitoring services, so it can be used
+on systems monitored by a third-party (as additional means of monitoring the alarm
+system). Alternatively, this program could be used to build "DIY" monitoring solution
+withouth requiring a third party monitoring provider.
+
 
 
 SUPPORTED ALARM PANEL MODELS
@@ -91,6 +101,8 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
 	v1.0.0beta 
+		- support for running scrip/command as response
+		  to events (alarm, zone tripped, etc..)
 		- support for sending X-10 commands via nxcmd
 		- support for sending Zone Bypass command via nxcmd
 		- support for display custom messages on NX-148 keypads
