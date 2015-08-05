@@ -21,9 +21,10 @@ NX-584E (home automation) module or enable built-in serial port (NX-8E panel).
 If you don't know the program code (PIN) for your panel, you may need to get
 your alarm provider to do this for you.
 
-This program does not interfere with alarm monitoring services, so it can be used
-on systems monitored by a third-party (as additional means of monitoring the alarm
-system). Alternatively, this program could be used to build "DIY" monitoring solution
+This program does not interfere with alarm monitoring services, so it can be 
+used on systems monitored by a third-party (as additional means of monitoring
+the alarm system). 
+Alternatively, this program could be used to build "DIY" monitoring solution
 withouth requiring a third party monitoring provider.
 
 
