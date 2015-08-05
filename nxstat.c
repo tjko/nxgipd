@@ -371,7 +371,7 @@ int main(int argc, char **argv)
     nx_zone_status_t *zn;
     char tmp[16],tmp2[16];
 
-    printf("Zone  Name              Mode      Status  Last Change\n"
+    printf("Zone  Name              Mode      Status  Last Fault/Trouble\n"
 	   "----  ----------------  --------  ------  --------------------------------\n"
 	   );
 
@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 	       zn->name,
 	       (zn->bypass?"Bypassed":"Active"),
 	       (zn->fault?"Fault":(zn->trouble?"Trouble":"OK")),
-	       (zn->last_updated > 0 ? timestampstr(zn->last_updated):"n/a"),
+	       (zn->last_tripped > 0 ? timestampstr(zn->last_tripped):"n/a"),
 	       tmp
 	       );
     }

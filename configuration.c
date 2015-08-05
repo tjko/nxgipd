@@ -260,7 +260,7 @@ int save_status_xml(const char *filename, nx_system_status_t *astat)
       mxmlElementSetAttrf(z,"name","%s",zn->name);
 
       e=mxmlNewElement(z,"LastChange");
-      mxmlElementSetAttrf(e,"time","%lu",(unsigned long)zn->last_updated);
+      mxmlElementSetAttrf(e,"time","%lu",(unsigned long)zn->last_tripped);
 
       zone_count++;
     }
@@ -353,6 +353,7 @@ int load_status_xml(const char *filename, nx_system_status_t *astat)
       if (time_s && (sscanf(time_s,"%lu",&t)==1)) {
 	logmsg(3,"restore zone last change: %s %lu (%lu)",zn->name,t,zn->last_updated);
 	zn->last_updated=t;
+	zn->last_tripped=t;
       }
     }
 
