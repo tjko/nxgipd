@@ -234,7 +234,7 @@ int main(int argc, char **argv)
   }
 
   config->trigger_enable=0;
-  if (strlen(config->alarm_program) > 0) {
+  if (config->alarm_program != NULL && strlen(config->alarm_program) > 0) {
     if (access(config->alarm_program, X_OK) != 0) {
       warn("cannot execute alarm program (%s): %s (%d)", 
 	   config->alarm_program, strerror(errno),errno);
