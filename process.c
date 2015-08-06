@@ -14,14 +14,24 @@
 
 
 
-#define LOG_STATUS_CHANGE(o,n,chg,t,f)   { if (o!=n) { if (!init_mode) logmsg(0,"%s",(n?t:f)); o=n; chg++; } }
+#define LOG_STATUS_CHANGE(oldstate,newstate,chg,t,f)   {		\
+    if (oldstate != newstate) {						\
+      char *logtext = (newstate ? t : f);				\
+      if (!init_mode && logtext != NULL) logmsg(0,"%s", logtext);	\
+      oldstate=newstate;						\
+      chg++;								\
+    }									\
+  }
 
 #define CHECK_STATUS_CHANGE(t,v,chg,tmp,tmsg,fmsg) {		   \
     if (v != t) {						   \
+      char *logtext = (t ? tmsg : fmsg);			   \
       v=t;							   \
-      chg++;							   \
-      if (tmp[0]) strcat(tmp,", ");				   \
-      strcat (tmp,(t ? tmsg : fmsg));				   \
+      if (logtext != NULL) {					   \
+	if (tmp[0]) strncat(tmp, ", ", sizeof(tmp)-strlen(tmp));   \
+	strncat (tmp, logtext, sizeof(tmp)-strlen(tmp));	   \
+	chg++;							   \
+      }								   \
     }								   \
   }
 
@@ -79,16 +89,15 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	int change2=0;
 
 	tmp[0]=0;
-
 	CHECK_STATUS_CHANGE(fault,zone->fault,change,tmp,"Fault","Ok");
-	CHECK_STATUS_CHANGE(tamper,zone->tamper,change,tmp,"Tamper","(Tamper)");
-	CHECK_STATUS_CHANGE(trouble,zone->trouble,change,tmp,"Trouble","(Trouble)");
-	CHECK_STATUS_CHANGE(bypass,zone->bypass,change2,tmp,"Bypass","(Bypass)");
+	CHECK_STATUS_CHANGE(tamper,zone->tamper,change,tmp,"Tamper","Tamper Clear");
+	CHECK_STATUS_CHANGE(trouble,zone->trouble,change,tmp,"Trouble","Trouble Clear");
+	CHECK_STATUS_CHANGE(bypass,zone->bypass,change2,tmp,"Bypass enabled","Bypass disabled");
 	CHECK_STATUS_CHANGE(inhibited,zone->inhibited,change2,tmp,"Inhibited","(Inhibited)");
-	CHECK_STATUS_CHANGE(low_battery,zone->low_battery,change2,tmp,"Low Battery","(Low Battery)");
-	CHECK_STATUS_CHANGE(loss_supervision,zone->loss_supervision,change2,tmp,"Loss of Supervision","(Loss ofSupervision)");
-	CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change2,tmp,"Alarm Memory","(Alarm Memory)");
-	CHECK_STATUS_CHANGE(bypass_mem,zone->bypass_mem,change2,tmp,"Bypass Memory","(Bypass Memory)");
+	CHECK_STATUS_CHANGE(low_battery,zone->low_battery,change2,tmp,"Battery Low","Battery OK");
+	CHECK_STATUS_CHANGE(loss_supervision,zone->loss_supervision,change2,tmp,"Supervision Lost","Supervision OK");
+	CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change2,tmp,"Alarm Memory","Alarm Memory Clear");
+	CHECK_STATUS_CHANGE(bypass_mem,zone->bypass_mem,change2,tmp,"Bypass Memory","Bypass Memory Clear");
 
 	if (zone->partition_mask != msg->msg[1]) zone->partition_mask=msg->msg[1];
 	if (zone->type_flags[0] != msg->msg[2]) zone->type_flags[0]=msg->msg[2];
@@ -141,11 +150,10 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  alarm_mem = (s & 0x08 ? 1:0);
 
 	  tmp[0]=0;
-
 	  CHECK_STATUS_CHANGE(fault,zone->fault,change,tmp,"Fault","Ok");
-	  CHECK_STATUS_CHANGE(bypass,zone->bypass,change2,tmp,"Bypass","(Bypass)");
-	  CHECK_STATUS_CHANGE(trouble,zone->trouble,change,tmp,"Trouble","(Trouble)");
-	  CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change2,tmp,"Alarm Memory","(Alarm Memory)");
+	  CHECK_STATUS_CHANGE(bypass,zone->bypass,change2,tmp,"Bypass enabled","Bypass disabled");
+	  CHECK_STATUS_CHANGE(trouble,zone->trouble,change,tmp,"Trouble","Trouble Clear");
+	  CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change2,tmp,"Alarm Memory","Alarm Memory Clear");
 	  
 	  if (change || change2) {
 	    zone->last_updated=msg->r_time;
@@ -183,85 +191,88 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	int change2 = 0;
 	int p,armed_count;
 
-	tmp[0]=0;
 
 
 	/* same statuses as we get from partitions snapshot message */
+	tmp[0]=0;
 
 	/* armed */
 	CHECK_STATUS_CHANGE((msg->msg[1]&0x40?1:0),part->armed,change,tmp,"Armed","Not Armed");
 	/* ready */
 	CHECK_STATUS_CHANGE((msg->msg[6]&0x04?1:0),part->ready,change2,tmp,"Ready","Not Ready");
 	/* stay mode */
-	CHECK_STATUS_CHANGE((msg->msg[3]&0x04?1:0),part->stay_mode,change,tmp,"Stay Mode","(Stay Mode)");
+	CHECK_STATUS_CHANGE((msg->msg[3]&0x04?1:0),part->stay_mode,change,tmp,"Stay Mode On","Stay Mode Off");
 	/* chime mode */
-	CHECK_STATUS_CHANGE((msg->msg[3]&0x08?1:0),part->chime_mode,change,tmp,"Chime Mode","(Chime Mode)");
+	CHECK_STATUS_CHANGE((msg->msg[3]&0x08?1:0),part->chime_mode,change,tmp,"Chime Mode On","Chime Mode Off");
 	/* entry delay */
-	CHECK_STATUS_CHANGE((msg->msg[3]&0x10?1:0),part->entry_delay,change,tmp,"Entry Delay","(Entry Delay)");
+	CHECK_STATUS_CHANGE((msg->msg[3]&0x10?1:0),part->entry_delay,change,tmp,"Entry Delay Start","Entry Delay End");
 	/* exit delay */
-	CHECK_STATUS_CHANGE((msg->msg[3]&0xc0?1:0),part->exit_delay,change,tmp,"Exit Delay","(Exit Delay)");
+	CHECK_STATUS_CHANGE((msg->msg[3]&0xc0?1:0),part->exit_delay,change,tmp,"Exit Delay Start","Exit Delay End");
 	/* previous alarm */
-	CHECK_STATUS_CHANGE((msg->msg[2]&0x01?1:0),part->prev_alarm,change,tmp,"Previous Alarm","(Previous Alarm)");
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x01?1:0),part->prev_alarm,change,tmp,"Previous Alarm","Previous Alarm Clear");
 
 	/* additional statuses...*/
 
 	/* fire trouble */
-	CHECK_STATUS_CHANGE((msg->msg[1]&0x02?1:0),part->fire_trouble,change,tmp,"Fire Trouble","(Fire Trouble)");
+	CHECK_STATUS_CHANGE((msg->msg[1]&0x02?1:0),part->fire_trouble,change,tmp,"Fire Trouble","Fire Trouble Clear");
 	/* fire */
-	CHECK_STATUS_CHANGE((msg->msg[1]&0x04?1:0),part->fire,change,tmp,"Fire","(Fire)");
+	CHECK_STATUS_CHANGE((msg->msg[1]&0x04?1:0),part->fire,change,tmp,"Fire","Fire Clear");
 	/* buzzer on */
-	CHECK_STATUS_CHANGE((msg->msg[1]&0x08?1:0),part->buzzer_on,change,tmp,"Buzzer On","(Buzzer On)");
+	CHECK_STATUS_CHANGE((msg->msg[1]&0x08?1:0),part->buzzer_on,change,tmp,"Buzzer On","Buzzer Off");
 	/* instant */
-	CHECK_STATUS_CHANGE((msg->msg[1]&0x80?1:0),part->instant,change,tmp,"Instant","(Instant)");
+	CHECK_STATUS_CHANGE((msg->msg[1]&0x80?1:0),part->instant,change,tmp,"Instant Enabled","Instant Disabled");
 
 	/* siren on */
-	CHECK_STATUS_CHANGE((msg->msg[2]&0x02?1:0),part->siren_on,change,tmp,"Siren On","(Siren On)");
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x02?1:0),part->siren_on,change,tmp,"Siren On","Siren Off");
 	/* steady siren on */
-	CHECK_STATUS_CHANGE((msg->msg[2]&0x04?1:0),part->steadysiren_on,change,tmp,"Steady Siren On","(Steady Siren On)");
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x04?1:0),part->steadysiren_on,change,tmp,"Steady Siren On","Steady Siren Off");
 	/* alarm memory */
-	CHECK_STATUS_CHANGE((msg->msg[2]&0x08?1:0),part->alarm_mem,change,tmp,"Alarm Memory","(Alarm Memory)");
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x08?1:0),part->alarm_mem,change,tmp,"Alarm Memory","Alarm Memory Cleared");
 	/* tamper */
-	CHECK_STATUS_CHANGE((msg->msg[2]&0x10?1:0),part->tamper,change,tmp,"Tamper","(Tamper)");
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x10?1:0),part->tamper,change,tmp,"Tamper","Tamper Clear");
 	/* cancel entered */
-	CHECK_STATUS_CHANGE((msg->msg[2]&0x20?1:0),part->cancel_entered,change,tmp,"Cancel Entered","(Cancel Entered)");
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x20?1:0),part->cancel_entered,change,tmp,"Cancel Entered",NULL);
 	/* code entered */
-	CHECK_STATUS_CHANGE((msg->msg[2]&0x40?1:0),part->code_entered,change,tmp,"Code Entered","(Code Entered)");
+	CHECK_STATUS_CHANGE((msg->msg[2]&0x40?1:0),part->code_entered,change,tmp,"Code Entered",NULL);
 
 	/* silent exit enabled */
-	CHECK_STATUS_CHANGE((msg->msg[3]&0x02?1:0),part->silent_exit,change,tmp,"Silent Exit","(Silent Exit)");
+	CHECK_STATUS_CHANGE((msg->msg[3]&0x02?1:0),part->silent_exit,change,tmp,"Silent Exit Enabled","Silent Exit Disabled");
 
 	/* sensor low battery */
-	CHECK_STATUS_CHANGE((msg->msg[4]&0x40?1:0),part->low_battery,change,tmp,"Low Battery","(Low Battery)");
+	CHECK_STATUS_CHANGE((msg->msg[4]&0x40?1:0),part->low_battery,change,tmp,"Battery Low","Battery OK");
 	/* sensor loss of supervision */
-	CHECK_STATUS_CHANGE((msg->msg[4]&0x80?1:0),part->lost_supervision,change,tmp,"Lost Supervision","(Lost Supervision)");
+	CHECK_STATUS_CHANGE((msg->msg[4]&0x80?1:0),part->lost_supervision,change,tmp,"Supervision Lost","Supervision OK");
 
 
 	/* zones bypassed */
-	CHECK_STATUS_CHANGE((msg->msg[6]&0x01?1:0),part->zones_bypassed,change,tmp,"Zones Bypassed","(Zones Bypassed)");
+	CHECK_STATUS_CHANGE((msg->msg[6]&0x01?1:0),part->zones_bypassed,change,tmp,"Zone(s) Bypassed","No Zone(s) Bypassed");
 	/* valid pin */
-	CHECK_STATUS_CHANGE((msg->msg[6]&0x10?1:0),part->valid_pin,change,tmp,"Valid PIN","(Valid PIN)");
+	CHECK_STATUS_CHANGE((msg->msg[6]&0x10?1:0),part->valid_pin,change,tmp,"Valid PIN",NULL);
 	/* chime on */
-	CHECK_STATUS_CHANGE((msg->msg[6]&0x20?1:0),part->chime_on,change,tmp,"Chime On","(Chime On)");
+	CHECK_STATUS_CHANGE((msg->msg[6]&0x20?1:0),part->chime_on,change,tmp,"Chime On","Chime Off");
 	/* error beep on */
-	CHECK_STATUS_CHANGE((msg->msg[6]&0x40?1:0),part->errorbeep_on,change,tmp,"Error Beep","(Error Beep)");
+	CHECK_STATUS_CHANGE((msg->msg[6]&0x40?1:0),part->errorbeep_on,change,tmp,"Error Beep On","Error Beep Off");
 	/* tone on */
-	CHECK_STATUS_CHANGE((msg->msg[6]&0x80?1:0),part->tone_on,change,tmp,"Tone On","(Tone On)");
+	CHECK_STATUS_CHANGE((msg->msg[6]&0x80?1:0),part->tone_on,change,tmp,"Tone On","Tone Off");
 
 	/* alarm sent */
-	CHECK_STATUS_CHANGE((msg->msg[7]&0x1c?1:0),part->alarm_sent,change,tmp,"Alarm Sent","(Alarm Sent)");
+	CHECK_STATUS_CHANGE((msg->msg[7]&0x1c?1:0),part->alarm_sent,change,tmp,"Alarm Sent",NULL);
 	/* keyswitch armed */
-	CHECK_STATUS_CHANGE((msg->msg[7]&0x40?1:0),part->keyswitch_armed,change,tmp,"Keyswitch Armed","(Keyswitch Armed)");
+	CHECK_STATUS_CHANGE((msg->msg[7]&0x40?1:0),part->keyswitch_armed,change,tmp,"Keyswitch Armed","Keyswitch Unarmed");
 
 	
 
 	/* last user */
 	if (msg->msg[5] != part->last_user) {
-	  char tstr[255];
+	  char tstr[64];
 	  part->last_user=msg->msg[5];
 	  change++;
-	  if (tmp[0]) strcat(tmp,", ");
-	  snprintf(tstr,sizeof(tstr),"Last User = %03u",part->last_user);
-	  strcat(tmp,tstr);
+	  if (tmp[0]) strncat(tmp,", ",sizeof(tmp)-strlen(tmp));
+	  if (part->last_user == NX_NO_USER) 
+	    snprintf(tstr,sizeof(tstr),"User = <None>");
+	  else 
+	    snprintf(tstr,sizeof(tstr),"User = %03u",part->last_user);
+	  strncat(tmp,tstr,sizeof(tmp)-strlen(tmp));
 	}
 
 	if (change || change2) {
@@ -323,23 +334,23 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  
 	  /* stay mode */
 	  t=(s & 0x08 ? 1:0);
-	  CHECK_STATUS_CHANGE(t,part->stay_mode,change,tmp,"Stay Mode","(Stay Mode)");
+	  CHECK_STATUS_CHANGE(t,part->stay_mode,change,tmp,"Stay Mode On","Stay Mode Off");
 	  
 	  /* chime mode */
 	  t=(s & 0x10 ? 1:0);
-	  CHECK_STATUS_CHANGE(t,part->chime_mode,change,tmp,"Chime Mode","(Chime Mode)");
+	  CHECK_STATUS_CHANGE(t,part->chime_mode,change,tmp,"Chime Mode On","Chime Mode Off");
 	  
 	  /* entry delay */
 	  t=(s & 0x20 ? 1:0);
-	  CHECK_STATUS_CHANGE(t,part->entry_delay,change,tmp,"Entry Delay","(Entry Delay)");
+	  CHECK_STATUS_CHANGE(t,part->entry_delay,change,tmp,"Entry Delay Start","Entry Delay End");
 	  
 	  /* exit delay */
 	  t=(s & 0x40 ? 1:0);
-	  CHECK_STATUS_CHANGE(t,part->exit_delay,change,tmp,"Exit Delay","(Exit Delay)");
+	  CHECK_STATUS_CHANGE(t,part->exit_delay,change,tmp,"Exit Delay Start","Exit Delay End");
 
 	  /* previous alarm */
 	  t=(s & 0x80 ? 1:0);
-	  CHECK_STATUS_CHANGE(t,part->prev_alarm,change,tmp,"Previous Alarm","(Previous Alarm)");
+	  CHECK_STATUS_CHANGE(t,part->prev_alarm,change,tmp,"Previous Alarm","Previous Alarm Cleared");
 
 	  
 	  if (change || change2) {
@@ -371,7 +382,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       int change = 0;
 
       if (astat->panel_id != (uchar) msg->msg[0]) {
-	if (init_mode)
+	if (init_mode || astat->panel_id == 0)
 	  logmsg(0,"Panel ID: %d",msg->msg[0]);
 	else
 	  logmsg(0,"Panel ID change: %d -> %d",astat->panel_id,msg->msg[0]);
@@ -397,67 +408,67 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
       LOG_STATUS_CHANGE(astat->line_seizure,(msg->msg[1]&0x01 ? 1:0),change,"Line Seizure start","Line Seizure end");
       LOG_STATUS_CHANGE(astat->off_hook,(msg->msg[1]&0x02 ? 1:0),change,"Off Hook","On Hook");
-      LOG_STATUS_CHANGE(astat->handshake_rcvd,(msg->msg[1]&0x04 ? 1:0),change,"Initial Handshake Received","(Initial Handshake Received)");
+      LOG_STATUS_CHANGE(astat->handshake_rcvd,(msg->msg[1]&0x04 ? 1:0),change,"Initial Handshake Received",NULL);
       LOG_STATUS_CHANGE(astat->download_in_progress,(msg->msg[1]&0x08 ? 1:0),change,"Download in progress","Download end");
       LOG_STATUS_CHANGE(astat->dialerdelay_in_progress,(msg->msg[1]&0x10 ? 1:0),change,"Dialer delay in progress","Dialer Delay end");
-      LOG_STATUS_CHANGE(astat->backup_phone,(msg->msg[1]&0x20 ? 1:0),change,"Using backup phone","Using primary backup phone");
+      LOG_STATUS_CHANGE(astat->backup_phone,(msg->msg[1]&0x20 ? 1:0),change,"Using backup phone","Using primary phone");
       LOG_STATUS_CHANGE(astat->listen_in,(msg->msg[1]&0x40 ? 1:0),change,"Listen in active","Listen in inactive");
-      LOG_STATUS_CHANGE(astat->twoway_lockout,(msg->msg[1]&0x80 ? 1:0),change,"Two way lockout","(Two way lockout)");
+      LOG_STATUS_CHANGE(astat->twoway_lockout,(msg->msg[1]&0x80 ? 1:0),change,"Two way lockout",NULL);
 
       LOG_STATUS_CHANGE(astat->ground_fault,(msg->msg[2]&0x01 ? 1:0),change,"Ground Fault","Ground OK");
       LOG_STATUS_CHANGE(astat->phone_fault,(msg->msg[2]&0x02 ? 1:0),change,"Phone Fault","Phone OK");
-      LOG_STATUS_CHANGE(astat->fail_to_comm,(msg->msg[2]&0x04 ? 1:0),change,"Fail to communicate","(Fail to communicate)");
+      LOG_STATUS_CHANGE(astat->fail_to_comm,(msg->msg[2]&0x04 ? 1:0),change,"Fail to communicate","Communications Restored");
       LOG_STATUS_CHANGE(astat->fuse_fault,(msg->msg[2]&0x08 ? 1:0),change,"Fuse Fault","Fuse OK");
-      LOG_STATUS_CHANGE(astat->box_tamper,(msg->msg[2]&0x10 ? 1:0),change,"Box Tamper","(Box Tamper)");
-      LOG_STATUS_CHANGE(astat->siren_tamper,(msg->msg[2]&0x20 ? 1:0),change,"Siren Tamper","(Siren Tamper)");
+      LOG_STATUS_CHANGE(astat->box_tamper,(msg->msg[2]&0x10 ? 1:0),change,"Box Tamper",NULL);
+      LOG_STATUS_CHANGE(astat->siren_tamper,(msg->msg[2]&0x20 ? 1:0),change,"Siren Tamper",NULL);
       LOG_STATUS_CHANGE(astat->low_battery,(msg->msg[2]&0x40 ? 1:0),change,"Low Battery","Battery OK");
       LOG_STATUS_CHANGE(astat->ac_fail,(msg->msg[2]&0x80 ? 1:0),change,"AC Fail","AC OK");
 
-      LOG_STATUS_CHANGE(astat->exp_tamper,(msg->msg[3]&0x01 ? 1:0),change,"Expander box tamper","(Expander box tamper)");
+      LOG_STATUS_CHANGE(astat->exp_tamper,(msg->msg[3]&0x01 ? 1:0),change,"Expander box tamper",NULL);
       LOG_STATUS_CHANGE(astat->exp_ac_fail,(msg->msg[3]&0x02 ? 1:0),change,"Expander AC failure","Expander AC OK");
       LOG_STATUS_CHANGE(astat->exp_low_battery,(msg->msg[3]&0x04 ? 1:0),change,"Expander battery LOW","Expander battery OK");
       LOG_STATUS_CHANGE(astat->exp_loss_supervision,(msg->msg[3]&0x08 ? 1:0),change,"Expander loss of supervision","Expander supervision restored");
-      LOG_STATUS_CHANGE(astat->exp_aux_overcurrent,(msg->msg[3]&0x10 ? 1:0),change,"Expander aux ouput overcurrent","(Expander aux output overcurrent)");
+      LOG_STATUS_CHANGE(astat->exp_aux_overcurrent,(msg->msg[3]&0x10 ? 1:0),change,"Expander aux ouput overcurrent","Expander aux output current normal");
       LOG_STATUS_CHANGE(astat->aux_com_channel_fail,(msg->msg[3]&0x20 ? 1:0),change,"Aux communication channel FAILURE","Aux communication channel OK");
       LOG_STATUS_CHANGE(astat->exp_bell_fault,(msg->msg[3]&0x40 ? 1:0),change,"Expander bell fault","Expander bell OK");
       
       LOG_STATUS_CHANGE(astat->sixdigitpin,(msg->msg[4]&0x01 ? 1:0),change,"6 Digit PIN enabled","4 Digit PIN enabled");
-      LOG_STATUS_CHANGE(astat->prog_token_inuse,(msg->msg[4]&0x02 ? 1:0),change,"Programming token in use","(Programming token in use)");
+      LOG_STATUS_CHANGE(astat->prog_token_inuse,(msg->msg[4]&0x02 ? 1:0),change,"Programming token in use",NULL);
       LOG_STATUS_CHANGE(astat->pin_local_dl,(msg->msg[4]&0x04 ? 1:0),change,"PIN required for local download","PIN not required for local download");
       LOG_STATUS_CHANGE(astat->global_pulsing_buzzer,(msg->msg[4]&0x08 ? 1:0),change,"Global pulsing buzzer ON","Global pulsing buzzer OFF");
       LOG_STATUS_CHANGE(astat->global_siren,(msg->msg[4]&0x10 ? 1:0),change,"Global siren ON","Global siren OFF");
       LOG_STATUS_CHANGE(astat->global_steady_siren,(msg->msg[4]&0x20 ? 1:0),change,"Global steady siren ON","Global steady siren OFF");
-      LOG_STATUS_CHANGE(astat->bus_seize_line,(msg->msg[4]&0x40 ? 1:0),change,"Bus device has line seized","(Bus device has line seized)");
-      LOG_STATUS_CHANGE(astat->bus_sniff_mode,(msg->msg[4]&0x80 ? 1:0),change,"Bus device has requested sniff mode","(Bus device has requested sniff mode)");
+      LOG_STATUS_CHANGE(astat->bus_seize_line,(msg->msg[4]&0x40 ? 1:0),change,"Bus device has line seized",NULL);
+      LOG_STATUS_CHANGE(astat->bus_sniff_mode,(msg->msg[4]&0x80 ? 1:0),change,"Bus device has requested sniff mode",NULL);
 
       LOG_STATUS_CHANGE(astat->battery_test,(msg->msg[5]&0x01 ? 1:0),change,"Dynamic Battery Test start","Dynamic Battery Test end");
       LOG_STATUS_CHANGE(astat->ac_power,(msg->msg[5]&0x02 ? 1:0),change,"AC power ON","AC power OFF");
-      LOG_STATUS_CHANGE(astat->low_battery_memory,(msg->msg[5]&0x04 ? 1:0),change,"Low battery memory","(Low battery memory)");
-      LOG_STATUS_CHANGE(astat->ground_fault_memory,(msg->msg[5]&0x08 ? 1:0),change,"Ground fault memory","(Ground fault memory)");
-      LOG_STATUS_CHANGE(astat->fire_alarm_verification,(msg->msg[5]&0x10 ? 1:0),change,"Fire alarm verification being timed","(Fire alarm verification being timed)");
-      LOG_STATUS_CHANGE(astat->smoke_power_reset,(msg->msg[5]&0x20 ? 1:0),change,"Smoke detector power reset","(Smoke detector power reset)");
+      LOG_STATUS_CHANGE(astat->low_battery_memory,(msg->msg[5]&0x04 ? 1:0),change,"Low battery memory",NULL);
+      LOG_STATUS_CHANGE(astat->ground_fault_memory,(msg->msg[5]&0x08 ? 1:0),change,"Ground fault memory",NULL);
+      LOG_STATUS_CHANGE(astat->fire_alarm_verification,(msg->msg[5]&0x10 ? 1:0),change,"Fire alarm verification being timed",NULL);
+      LOG_STATUS_CHANGE(astat->smoke_power_reset,(msg->msg[5]&0x20 ? 1:0),change,"Smoke detector power reset",NULL);
       LOG_STATUS_CHANGE(astat->line_power_50hz,(msg->msg[5]&0x40 ? 1:0),change,"50 Hz line power detected","60 Hz line power detected");
-      LOG_STATUS_CHANGE(astat->high_voltage_charge,(msg->msg[5]&0x80 ? 1:0),change,"Timing a high voltage battery charge","(Timing a high voltage battery charge)");
+      LOG_STATUS_CHANGE(astat->high_voltage_charge,(msg->msg[5]&0x80 ? 1:0),change,"Timing a high voltage battery charge",NULL);
       
-      LOG_STATUS_CHANGE(astat->comm_since_autotest,(msg->msg[6]&0x01 ? 1:0),change,"Communication since last autotest","(Communication since last autotest)");
+      LOG_STATUS_CHANGE(astat->comm_since_autotest,(msg->msg[6]&0x01 ? 1:0),change,"Communication since last autotest","No Communication since last autotest");
       LOG_STATUS_CHANGE(astat->powerup_delay,(msg->msg[6]&0x02 ? 1:0),change,"Power up delay in progress","Power up delay end");
       LOG_STATUS_CHANGE(astat->walktest_mode,(msg->msg[6]&0x04 ? 1:0),change,"Walk test mode ON","Walk test mode OFF");
-      LOG_STATUS_CHANGE(astat->system_time_loss,(msg->msg[6]&0x08 ? 1:0),change,"Loss of system time","(Loss of system time)");
-      LOG_STATUS_CHANGE(astat->enroll_request,(msg->msg[6]&0x10 ? 1:0),change,"Enroll request","(Enroll request)");
+      LOG_STATUS_CHANGE(astat->system_time_loss,(msg->msg[6]&0x08 ? 1:0),change,"System time lost","System time restored");
+      LOG_STATUS_CHANGE(astat->enroll_request,(msg->msg[6]&0x10 ? 1:0),change,"Enroll request",NULL);
       LOG_STATUS_CHANGE(astat->testfixture_mode,(msg->msg[6]&0x20 ? 1:0),change,"Test fixture mode ON","Test fixture mode OFF");
       LOG_STATUS_CHANGE(astat->controlshutdown_mode,(msg->msg[6]&0x40 ? 1:0),change,"Control shutdown mode ON","Control shutdown mode OFF");
-      LOG_STATUS_CHANGE(astat->cancel_window,(msg->msg[6]&0x80 ? 1:0),change,"Timing cancel window","(Timing cancel window)");
+      LOG_STATUS_CHANGE(astat->cancel_window,(msg->msg[6]&0x80 ? 1:0),change,"Timing cancel window start","Timing cancel window end");
       
       LOG_STATUS_CHANGE(astat->callback_in_progress,(msg->msg[7]&0x80 ? 1:0),change,"Call back in progress","Call back end");
       
       LOG_STATUS_CHANGE(astat->phone_line_fault,(msg->msg[8]&0x01 ? 1:0),change,"Phone line Faulted","Phone line OK");
-      LOG_STATUS_CHANGE(astat->voltage_present_int,(msg->msg[8]&0x02 ? 1:0),change,"Voltage present interrupt","(Voltage present interrupt)");
+      LOG_STATUS_CHANGE(astat->voltage_present_int,(msg->msg[8]&0x02 ? 1:0),change,"Voltage present interrupt active","Voltage present interrupt inactive");
       LOG_STATUS_CHANGE(astat->house_phone_offhook,(msg->msg[8]&0x04 ? 1:0),change,"House phone OFF hook","House phone ON hook");
       LOG_STATUS_CHANGE(astat->phone_monitor,(msg->msg[8]&0x08 ? 1:0),change,"Phone line monitor enabled","Phone line monitor disabled");
-      LOG_STATUS_CHANGE(astat->phone_sniffing,(msg->msg[8]&0x10 ? 1:0),change,"Phone sniffing","(Phone sniffing)");
+      LOG_STATUS_CHANGE(astat->phone_sniffing,(msg->msg[8]&0x10 ? 1:0),change,"Phone sniffing start","Phone sniffing end");
       /* LOG_STATUS_CHANGE(astat->offhook_memory,(msg->msg[8]&0x20 ? 1:0),change,"Last read was off hook","(Last read was off hook)"); */
-      LOG_STATUS_CHANGE(astat->listenin_request,(msg->msg[8]&0x40 ? 1:0),change,"Listen in requested","(Listen in requested)");
-      LOG_STATUS_CHANGE(astat->listenin_trigger,(msg->msg[8]&0x80 ? 1:0),change,"Listen in trigger","(Listen in trigger)");
+      LOG_STATUS_CHANGE(astat->listenin_request,(msg->msg[8]&0x40 ? 1:0),change,"Listen in requested",NULL);
+      LOG_STATUS_CHANGE(astat->listenin_trigger,(msg->msg[8]&0x80 ? 1:0),change,"Listen in trigger",NULL);
       
       if (change) astat->last_updated=msg->r_time;
     }
@@ -1170,7 +1181,7 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
 	   astat->zones[i].name,
 	   (astat->zones[i].bypass?"Bypassed":"Active"),
 	   (astat->zones[i].fault?"Fault":"OK"),
-	   (astat->zones[i].last_updated > 0 ? timestampstr(astat->zones[i].last_updated):"n/a")
+	   (astat->zones[i].last_tripped > 0 ? timestampstr(astat->zones[i].last_tripped):"n/a")
 	   );
   }
 

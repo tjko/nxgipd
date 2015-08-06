@@ -21,6 +21,7 @@
 #define NX_MAX_LOG_ENTRIES       256
 #define NX_LOGICAL_LOCATION_MAX  4096
 #define NX_BUS_ADDRESS_MAX       256
+#define NX_NO_USER               98 
 
 /* module numbers */
 #define NX_MODULE_CONTROL_PANEL		8
