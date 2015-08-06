@@ -11,7 +11,7 @@
 #define PRGNAME "nxgipd"
 
 /* shared memory version, update if shared memory locations change... */
-#define SHMVERSION "42.2"
+#define SHMVERSION "42.3"
 
 #ifndef CONFIG_FILE
 #define CONFIG_FILE "/etc/nxgipd.conf"
@@ -197,6 +197,7 @@ typedef struct nx_shm {
   nx_interface_status_t  intstatus;
   nx_system_status_t     alarmstatus;  
   time_t                 daemon_started;
+  char                   daemon_version[32];
 } nx_shm_t;
 
 
@@ -223,6 +224,7 @@ void warn(char *format, ...);
 void logmsg(int priority, char *format, ...);
 int openserialdevice(const char *device, const char *speed);
 const char* timestampstr(time_t t);
+const char *timedeltastr(time_t delta);
 
 /* configuration.c */
 int load_config(const char *configxml, nx_configuration_t *config, int logtest);

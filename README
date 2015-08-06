@@ -102,7 +102,7 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
 	v1.0.0beta 
-		- support for running scrip/command as response
+		- support for running a script/command as response
 		  to events (alarm, zone tripped, etc..)
 		- support for sending X-10 commands via nxcmd
 		- support for sending Zone Bypass command via nxcmd

@@ -61,6 +61,28 @@ const char* timestampstr(time_t t)
 }
 
 
+const char *timedeltastr(time_t delta)
+{
+  static char buf[256];
+  uint d = (int)delta;
+
+  if (delta < 60) {
+    snprintf(buf,sizeof(buf)-1,"   %02ds",d);
+  }
+  else if (delta < 60*60){
+    snprintf(buf,sizeof(buf)-1,"%02dm%02ds",(d/60),(d%60));
+  } 
+  else if (delta < 60*60*24) {
+    snprintf(buf,sizeof(buf)-1,"%02dh%02dm",(d/(60*60)),(d%(60*60))/60);
+  }
+  else {
+    snprintf(buf,sizeof(buf)-1,"%02dd%02dh",(d/(60*60*24)),(d%(60*60*24))/(60*60));
+  }
+
+  buf[sizeof(buf)-1]=0;
+  return buf;
+}
+
 
 
 

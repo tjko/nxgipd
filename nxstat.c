@@ -46,29 +46,6 @@ nx_configuration_t *config = &configuration;
 
 
 
-const char *timedeltastr(time_t delta)
-{
-  static char buf[256];
-  uint d = (int)delta;
-
-  if (delta < 60) {
-    snprintf(buf,sizeof(buf)-1,"   %02ds",d);
-  }
-  else if (delta < 60*60){
-    snprintf(buf,sizeof(buf)-1,"%02dm%02ds",(d/60),(d%60));
-  } 
-  else if (delta < 60*60*24) {
-    snprintf(buf,sizeof(buf)-1,"%02dh%02dm",(d/(60*60)),(d%(60*60))/60);
-  }
-  else {
-    snprintf(buf,sizeof(buf)-1,"%02dd%02dh",(d/(60*60*24)),(d%(60*60*24))/(60*60));
-  }
-
-  buf[sizeof(buf)-1]=0;
-  return buf;
-}
-
-
 
 int main(int argc, char **argv)
 {
@@ -84,6 +61,7 @@ int main(int argc, char **argv)
   time_t lastparttime = 0;
   time_t now;
   int interface_status = 0;
+  int zone_info = -1;
 
   struct option long_options[] = {
     {"config",1,0,'c'},
@@ -94,6 +72,7 @@ int main(int argc, char **argv)
     {"version",0,0,'V'},
     {"zones",0,0,'z'},
     {"zones-long",0,0,'Z'},
+    {"zoneinfo",1,0,'x'},
     {NULL,0,0,0}
   };
   program_name="nxstat";
@@ -135,6 +114,13 @@ int main(int argc, char **argv)
       zones_mode=2;
       break;
 
+    case 'x':
+      if (optarg && sscanf(optarg,"%d",&zone_info)==1) {
+	if (zone_info < 1 || zone_info > NX_ZONES_MAX)
+	  die("invalid zone specified for option --zoneinfo");
+      }
+      break;
+
     case 'h':
     default:
       fprintf(stderr,"Usage: %s [OPTIONS]\n\n",program_name);
@@ -167,15 +153,14 @@ int main(int argc, char **argv)
   shmid = shmget(config->shmkey,sizeof(nx_shm_t),0);
   if (shmid < 0) {
     if (errno==EINVAL) 
-      fprintf(stderr,"Shared memory segment (key=%x) already exists with wrong size (?)\n",
-	      config->shmkey);
+      die("nxstat version mismatch with daemon version (shared memory segment wrong size)");
     if (errno==ENOENT)
       die("cannot find share memory segment (server not running?)");
     die("shmget() failed: %s (%d)\n",strerror(errno),errno);
   }
   shm = shmat(shmid,NULL,SHM_RDONLY);
   if (shm == (void*)-1)  
-    die("shmat() failed: %s (%d)\n",strerror(errno),errno);
+    die("shmat() failed: %d (%s)\n",errno,strerror(errno));
   istatus=&shm->intstatus;
   astat=&shm->alarmstatus;
 
@@ -183,9 +168,11 @@ int main(int argc, char **argv)
   /* check if server process is alive... */
 
   if (verbose_mode) {
-    printf("server pid=%d\n",shm->pid);
-    printf("shmversion: '%s'\n",shm->shmversion);
-    printf("last updated: %s\n",timestampstr(shm->last_updated));
+    printf("    Server PID: %d\n",shm->pid);
+    printf("Server Version: %s\n",shm->daemon_version);
+    printf("    shmversion: %s\n",shm->shmversion);
+    printf("  Last Updated: %s\n",timestampstr(shm->last_updated));
+    printf("\n");
   }
   if (kill(shm->pid,0) < 0 && errno != EPERM)
     die("server process not running anymore (pid=%d): %s",shm->pid,strerror(errno));
@@ -267,6 +254,51 @@ int main(int argc, char **argv)
     printf("\n");
     return 0;
   } 
+
+
+  /* display zone status flags */
+  if (zone_info > 0) {
+    printf("Zone Status Flags:\n        Zone: %d\n",zone_info);
+    nx_zone_status_t *z = &astat->zones[zone_info-1];
+    uchar *f;
+    if (z->valid != 1)
+      die("not a valid/active zone");
+
+    printf("   Zone Name: %s\n",z->name);
+
+    printf("Last updated: %s\n",(z->last_updated > 0 ?timestampstr(z->last_updated):"n/a"));
+    //printf("flags: %02x %02x %02x\n",z->type_flags[0],z->type_flags[1],z->type_flags[2]);
+    f=z->type_flags;
+
+    PRINT_SUP_FLAG("Fire",f[0],0x01);
+    PRINT_SUP_FLAG("24 Hour",f[0],0x02);
+    PRINT_SUP_FLAG("Key-switch",f[0],0x04);
+    PRINT_SUP_FLAG("Follower",f[0],0x08);
+    PRINT_SUP_FLAG("Entry / exit delay 1",f[0],0x10);
+    PRINT_SUP_FLAG("Entry / exit delay 2",f[0],0x20);
+    PRINT_SUP_FLAG("Interior",f[0],0x40);
+    PRINT_SUP_FLAG("Local only",f[0],0x80);
+
+    PRINT_SUP_FLAG("Keypad sounder",f[1],0x01);
+    PRINT_SUP_FLAG("Yelping siren",f[1],0x02);
+    PRINT_SUP_FLAG("Steady siren",f[1],0x04);
+    PRINT_SUP_FLAG("Chime",f[1],0x08);
+    PRINT_SUP_FLAG("Bypassable",f[1],0x10);
+    PRINT_SUP_FLAG("Group Bypassable",f[1],0x20);
+    PRINT_SUP_FLAG("Force armable",f[1],0x40);
+    PRINT_SUP_FLAG("Entry guard",f[1],0x80);
+
+    PRINT_SUP_FLAG("Fast loop response",f[2],0x01);
+    PRINT_SUP_FLAG("Double EOL tamper",f[2],0x02);
+    PRINT_SUP_FLAG("Trouble",f[2],0x04);
+    PRINT_SUP_FLAG("Cross zone",f[2],0x08);
+    PRINT_SUP_FLAG("Dialer delay",f[2],0x10);
+    PRINT_SUP_FLAG("Swinger shutdown",f[2],0x20);
+    PRINT_SUP_FLAG("Restorable",f[2],0x40);
+    PRINT_SUP_FLAG("Listen in",f[2],0x80);
+
+    return 0;
+  }
 
 
   /* print panel event log ... */
@@ -377,8 +409,8 @@ int main(int argc, char **argv)
 
     for(i=0;i<azones;i++) {
       zn=&astat->zones[i];
-      if (zn->last_updated > 0) {
-	snprintf(tmp,sizeof(tmp)-1,"(%s ago)",timedeltastr(now - zn->last_updated));
+      if (zn->last_tripped > 0) {
+	snprintf(tmp,sizeof(tmp)-1,"(%s ago)",timedeltastr(now - zn->last_tripped));
 	tmp[sizeof(tmp)-1]=0;
       } else {
 	tmp[0]=0;

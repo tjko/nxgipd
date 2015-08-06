@@ -31,6 +31,9 @@
 #include "nx-584.h"
 #include "nxgipd.h"
 
+
+const char *rcsid = "$Id$";
+
 int verbose_mode = 0;
 
 nx_shm_t *shm = NULL;
@@ -221,6 +224,7 @@ int main(int argc, char **argv)
   }
 
 
+
   printf("Loading configuration...\n");
   if (load_config(config_file,config,1))
     die("Failed to open configuration file: %s",config_file);
@@ -371,7 +375,7 @@ int main(int argc, char **argv)
     fclose(fp);
   }
 
-
+  snprintf(shm->daemon_version,sizeof(shm->daemon_version),"v%s (%s)",VERSION,BUILDDATE);
   logmsg(0,"Program started: %s v%s (%s)",PRGNAME,VERSION,BUILDDATE);
   logmsg(1,"NX interface version v%s detected",istatus->version);
 
