@@ -122,7 +122,7 @@ void run_zone_trigger(int zonenum,const char* zonename, int fault, int bypass, i
   BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_ZONE_TROUBLE=%d",trouble);
   BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_ZONE_TAMPER=%d",tamper);
   BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_ZONE_BYPASS=%d",bypass);
-  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_ARMED=%d",armed);
+  BUF_snprintf(env,MAX_TRIG_ENV,envc,tmp,"ALARM_EVENT_ZONE_ARMED=%d",armed);
   env[envc]=NULL;
 
   run_trigger_program((const char**)env);
