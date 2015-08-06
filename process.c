@@ -14,6 +14,7 @@
 
 
 
+
 #define LOG_STATUS_CHANGE(oldstate,newstate,chg,t,f)   {		\
     if (oldstate != newstate) {						\
       char *logtext = (newstate ? t : f);				\
@@ -23,16 +24,17 @@
     }									\
   }
 
-#define CHECK_STATUS_CHANGE(t,v,chg,tmp,tmsg,fmsg) {		   \
-    if (v != t) {						   \
-      char *logtext = (t ? tmsg : fmsg);			   \
-      v=t;							   \
-      if (logtext != NULL) {					   \
-	if (tmp[0]) strncat(tmp, ", ", sizeof(tmp)-strlen(tmp));   \
-	strncat (tmp, logtext, sizeof(tmp)-strlen(tmp));	   \
-	chg++;							   \
-      }								   \
-    }								   \
+#define CHECK_STATUS_CHANGE(t,v,chg,tmp,tmsg,fmsg) {			\
+    if (v != t) {							\
+      char *logtext = (t ? tmsg : fmsg);				\
+      v=t;								\
+      if (logtext != NULL) {						\
+	if (tmp[0])							\
+	  strncat(tmp,", ",sizeof(tmp)-strnlen(tmp,sizeof(tmp)-1)-1);	\
+	strncat(tmp,logtext,sizeof(tmp)-strnlen(tmp,sizeof(tmp)-1)-1);	\
+	chg++;								\
+      }									\
+    }									\
   }
 
 
@@ -267,12 +269,12 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  char tstr[64];
 	  part->last_user=msg->msg[5];
 	  change++;
-	  if (tmp[0]) strncat(tmp,", ",sizeof(tmp)-strlen(tmp));
+	  if (tmp[0]) strncat(tmp,", ",sizeof(tmp)-strnlen(tmp,sizeof(tmp)-1)-1);
 	  if (part->last_user == NX_NO_USER) 
 	    snprintf(tstr,sizeof(tstr),"User = <None>");
 	  else 
 	    snprintf(tstr,sizeof(tstr),"User = %03u",part->last_user);
-	  strncat(tmp,tstr,sizeof(tmp)-strlen(tmp));
+	  strncat(tmp,tstr,sizeof(tmp)-strnlen(tmp,sizeof(tmp)-1)-1);
 	}
 
 	if (change || change2) {

@@ -43,6 +43,9 @@ CFLAGS    = -Wall @CFLAGS@ $(XCPPFLAGS) $(DEFS)
 LDFLAGS   = @LDFLAGS@
 LIBS      = @LIBS@
 
+#CFLAGS	 += -Wall -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 
+
+
 # link against shared libmxml
 #LIBS = -lmxml
 # link against static libmxml
