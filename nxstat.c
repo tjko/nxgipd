@@ -33,7 +33,7 @@
 
 
 #define PRINT_SUP_FLAG(name,val,flag)  printf(" %40s: %s\n",name,(val & flag ? "Enabled" : "Disabled"))
-
+#define PRINT_FLAG(name,val) printf(" %40s: %s\n",name,(val ? "Active" : "Inactive"))
 
 int verbose_mode = 0;
 
@@ -62,12 +62,16 @@ int main(int argc, char **argv)
   time_t now;
   int interface_status = 0;
   int zone_info = -1;
+  int partition_info = -1;
+  int system_status = 0;
 
   struct option long_options[] = {
     {"config",1,0,'c'},
     {"help",0,0,'h'},
     {"interface",0,0,'i'},
     {"log",2,0,'l'},
+    {"partition",1,0,'p'},
+    {"system",0,0,'s'},
     {"verbose",0,0,'v'},
     {"version",0,0,'V'},
     {"zones",0,0,'z'},
@@ -79,7 +83,7 @@ int main(int argc, char **argv)
 
   umask(022);
 
-  while ((opt=getopt_long(argc,argv,"ivVhc:l::zZ",long_options,&opt_index)) != -1) {
+  while ((opt=getopt_long(argc,argv,"ip:svVhc:l::zZ",long_options,&opt_index)) != -1) {
     switch (opt) {
       
     case 'c':
@@ -88,6 +92,10 @@ int main(int argc, char **argv)
 
     case 'i':
       interface_status=1;
+      break;
+
+    case 's':
+      system_status=1;
       break;
 
     case 'v':
@@ -104,6 +112,13 @@ int main(int argc, char **argv)
 	if (log_mode < 0) log_mode=0;
       } else
 	log_mode=NX_MAX_LOG_ENTRIES;;
+      break;
+
+    case 'p':
+      if (optarg && sscanf(optarg,"%d",&partition_info)==1) {
+	if (partition_info < 1 || partition_info > NX_PARTITIONS_MAX)
+	  die("invalid partition specified (valid range: 1..8)");
+      }
       break;
 
     case 'z':
@@ -128,13 +143,15 @@ int main(int argc, char **argv)
 	      "  --config=<configfile>   use specified config file\n"
 	      "  -c <configfile>\n"
 	      "  --help, -h              display this help and exit\n"
+	      "  --interface, -i         display interface status\n"
 	      "  --log, -l               display full panel log\n"
 	      "  --log=<n>, -l <n>       display last n entries of panel log\n"
+	      "  --partition=<b>, -p <b> display full partition status\n"
+	      "  --system, -s            display full system status\n"
 	      "  --verbose, -v           enable verbose output to stdout\n"
 	      "  --version, -V           print program version\n"
 	      "  --zones, -z             display short zone status info\n"
 	      "  --zones-long, -Z        display long zone status info\n"
-	      "  --interface, -i         display interface status\n"
 	      "\n");
       exit(1);
     }
@@ -255,6 +272,110 @@ int main(int argc, char **argv)
     return 0;
   } 
 
+  /* display (detailed) system status */
+  if (system_status) {
+    printf("Alarm Panel Status:\n\n");
+    PRINT_FLAG("Line seizure",astat->line_seizure);
+    PRINT_FLAG("Off Hook",astat->off_hook);
+    PRINT_FLAG("Initial handshake received",astat->handshake_rcvd);
+    PRINT_FLAG("Download in progress",astat->download_in_progress);
+    PRINT_FLAG("Dialer delay in progress",astat->dialerdelay_in_progress);
+    PRINT_FLAG("Using backup phone",astat->backup_phone);
+    PRINT_FLAG("Listen-in active",astat->listen_in);
+    PRINT_FLAG("Two-way lockout",astat->twoway_lockout);
+    PRINT_FLAG("Ground fault",astat->ground_fault);
+    PRINT_FLAG("Phone fault",astat->phone_fault);
+    PRINT_FLAG("Fail to communicate",astat->fail_to_comm);
+    PRINT_FLAG("Fuse fault",astat->fuse_fault);
+    PRINT_FLAG("Box tamer",astat->box_tamper);
+    PRINT_FLAG("Siren tamper / trouble",astat->siren_tamper);
+    PRINT_FLAG("Low Battery",astat->low_battery);
+    PRINT_FLAG("AC fail",astat->ac_fail);
+    PRINT_FLAG("Expander box tamper",astat->exp_tamper);
+    PRINT_FLAG("Expander AC failure",astat->exp_ac_fail);
+    PRINT_FLAG("Expander low battery",astat->exp_low_battery);
+    PRINT_FLAG("Expander loss of supervision",astat->exp_loss_supervision);
+    PRINT_FLAG("Auxiliary communication channel failure",astat->aux_com_channel_fail);
+    PRINT_FLAG("Expander bell fault",astat->exp_bell_fault);
+    PRINT_FLAG("6-digit PINs enabled",astat->sixdigitpin);
+    PRINT_FLAG("Programming token in use",astat->prog_token_inuse);
+    PRINT_FLAG("PIN required for local download",astat->pin_local_dl);
+    PRINT_FLAG("Global pulsing buzzer",astat->global_pulsing_buzzer);
+    PRINT_FLAG("Global Siren on",astat->global_siren);
+    PRINT_FLAG("Global steady siren",astat->global_steady_siren);
+    PRINT_FLAG("Bus device has line seized",astat->bus_seize_line);
+    PRINT_FLAG("Bus device has requested sniff mode",astat->bus_sniff_mode);
+    PRINT_FLAG("Dynamic battery test",astat->battery_test);
+    PRINT_FLAG("AC power on",astat->ac_power);
+    PRINT_FLAG("Low battery memory",astat->low_battery_memory);
+    PRINT_FLAG("Ground fault memory",astat->ground_fault_memory);
+    PRINT_FLAG("Fire alarm verification being timed",astat->fire_alarm_verification);
+    PRINT_FLAG("Smoke power reset",astat->smoke_power_reset);
+    PRINT_FLAG("50Hz line power detected",astat->line_power_50hz);
+    PRINT_FLAG("Timing a high voltage battery charge",astat->high_voltage_charge);
+    PRINT_FLAG("Communication since last autotest",astat->comm_since_autotest);
+    PRINT_FLAG("Power-up delay in progress",astat->powerup_delay);
+    PRINT_FLAG("Walk test mode",astat->walktest_mode);
+    PRINT_FLAG("Loss of system time",astat->system_time_loss);
+    PRINT_FLAG("Enroll requested",astat->enroll_request);
+    PRINT_FLAG("Test fixture mode",astat->testfixture_mode);
+    PRINT_FLAG("Control shutdown mode",astat->controlshutdown_mode);
+    PRINT_FLAG("Timing a cancel window",astat->cancel_window);
+    PRINT_FLAG("Call back in progress",astat->callback_in_progress);
+    PRINT_FLAG("Phone line faulted",astat->phone_line_fault);
+    PRINT_FLAG("Voltage present interrupt active",astat->voltage_present_int);
+    PRINT_FLAG("House phone off hook",astat->house_phone_offhook);
+    PRINT_FLAG("Phone line monitor enabled",astat->phone_monitor);
+    PRINT_FLAG("Sniffing",astat->phone_sniffing);
+    PRINT_FLAG("Last read was off hook",astat->offhook_memory);
+    PRINT_FLAG("Listen-in requested",astat->listenin_request);
+    PRINT_FLAG("Listen-in trigger",astat->listenin_trigger);
+    return 0;
+  }
+
+  /* display detailed partition status */
+  if (partition_info > 0) {
+    printf("Partition %d Status:\n\n",partition_info);
+    nx_partition_status_t *p = &astat->partitions[partition_info-1];
+
+    if (!p->valid) {
+      warn("partition not active");
+      return 1;
+    }
+
+    PRINT_FLAG("Ready to arm",p->ready);
+    PRINT_FLAG("Armed",p->armed);
+    PRINT_FLAG("Stay Mode",p->stay_mode);
+    PRINT_FLAG("Entry Delay",p->entry_delay);
+    PRINT_FLAG("Exit Delay",p->exit_delay);
+    PRINT_FLAG("Previous Alarm",p->prev_alarm);
+    PRINT_FLAG("Alarm memory",p->alarm_mem);
+
+    PRINT_FLAG("Fire",p->fire);
+    PRINT_FLAG("Fire Trouble",p->fire_trouble);
+    PRINT_FLAG("Instat Mode",p->instant);
+    PRINT_FLAG("Tamper",p->tamper);
+    PRINT_FLAG("Valid PIN entered",p->valid_pin);
+    PRINT_FLAG("Cancel command entered",p->cancel_entered);
+    PRINT_FLAG("Code netered",p->code_entered);
+    PRINT_FLAG("Silent exit enabled",p->silent_exit);
+    PRINT_FLAG("Pulsing Buzzer",p->buzzer_on);
+    PRINT_FLAG("Siren on",p->siren_on);
+    PRINT_FLAG("Steady siren on",p->steadysiren_on);
+    PRINT_FLAG("Chime on",p->chime_on);
+    PRINT_FLAG("Error beep (triple beep)",p->errorbeep_on);
+    PRINT_FLAG("Tone on (activation tone)",p->tone_on);
+    PRINT_FLAG("Sensor low battery",p->low_battery);
+    PRINT_FLAG("Sensor lost supervision",p->lost_supervision);
+    PRINT_FLAG("Alarm Sent",p->alarm_sent);
+    PRINT_FLAG("Keyswitch armed",p->keyswitch_armed);
+    PRINT_FLAG("Zone bypassed",p->zones_bypassed);
+
+    printf("\n");
+    printf(" %40s: %d\n","Last User",p->last_user);
+    return 0;
+  }
+
 
   /* display zone status flags */
   if (zone_info > 0) {
@@ -269,6 +390,8 @@ int main(int argc, char **argv)
     printf("Last updated: %s\n",(z->last_updated > 0 ?timestampstr(z->last_updated):"n/a"));
     //printf("flags: %02x %02x %02x\n",z->type_flags[0],z->type_flags[1],z->type_flags[2]);
     f=z->type_flags;
+
+    // NOTE! this information seems bogus...either NX-584 is returning bad data or bug somewhere...
 
     PRINT_SUP_FLAG("Fire",f[0],0x01);
     PRINT_SUP_FLAG("24 Hour",f[0],0x02);

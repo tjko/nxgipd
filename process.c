@@ -241,9 +241,9 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	CHECK_STATUS_CHANGE((msg->msg[3]&0x02?1:0),part->silent_exit,change,tmp,"Silent Exit Enabled","Silent Exit Disabled");
 
 	/* sensor low battery */
-	CHECK_STATUS_CHANGE((msg->msg[4]&0x40?1:0),part->low_battery,change,tmp,"Battery Low","Battery OK");
+	CHECK_STATUS_CHANGE((msg->msg[4]&0x40?1:0),part->low_battery,change,tmp,"Sensor Battery Low","Sensor Battery OK");
 	/* sensor loss of supervision */
-	CHECK_STATUS_CHANGE((msg->msg[4]&0x80?1:0),part->lost_supervision,change,tmp,"Supervision Lost","Supervision OK");
+	CHECK_STATUS_CHANGE((msg->msg[4]&0x80?1:0),part->lost_supervision,change,tmp,"Sensor Supervision Lost","Sensor Supervision OK");
 
 
 	/* zones bypassed */
