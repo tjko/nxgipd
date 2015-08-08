@@ -272,8 +272,8 @@ int main(int argc, char **argv)
       sscanf(argv[optind+1],"%d",&device);
       sscanf(argv[optind+2],"%d",&location);
     }
-    if (device < 0 || device >= NX_BUS_ADDRESS_MAX || 
-	location < 0 || location >= NX_LOGICAL_LOCATION_MAX) 
+    if (device < 0 || device > NX_BUS_ADDRESS_MAX || 
+	location < 0 || location > NX_LOGICAL_LOCATION_MAX) 
       die("getprogram option require device and location arguments");
   }
   else if (!strcasecmp(cmd,"message")) {

@@ -782,8 +782,8 @@ int read_program_data(int fd, int protocol, int device, int location, int mode, 
   int ret,i,nibble,size,len,type;
 
   if (!datastr || !datatype) return -10;
-  if (device < 0 || device >= NX_BUS_ADDRESS_MAX) return -11;
-  if (location < 0 || location >= NX_LOGICAL_LOCATION_MAX) return -12;
+  if (device < 0 || device > NX_BUS_ADDRESS_MAX) return -11;
+  if (location < 0 || location > NX_LOGICAL_LOCATION_MAX) return -12;
 
 
   memset(&msgin,0,sizeof(msgin));
@@ -1137,7 +1137,7 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
       msgout.msg[0]=i;
       ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PART_STATUS_MSG,&msgin);
       if (!(ret == 1 && msgin.msgnum == NX_PART_STATUS_MSG)) return -3;
-      process_message(&msgin,1,0,astat,istatus);
+      process_message(&msgin,0,0,astat,istatus);
     }
   }
 
