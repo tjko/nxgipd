@@ -97,7 +97,11 @@ void signal_handler(int sig)
 void exit_cleanup()
 {
   logmsg(3,"exit_cleanup()");
-  if (config->status_file && astat) {
+
+  /* only attempt to save zone statuses if daemon is fully initialized... */
+  if (config->status_file && astat && 
+      shm != NULL && shm->daemon_started > 0) {
+
     int r = save_status_xml(config->status_file, astat);
     if (r != 0) {
       logmsg(0,"failed to save alarm status: %s (%d)",config->status_file,r);
