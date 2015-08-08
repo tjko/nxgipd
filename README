@@ -1,15 +1,15 @@
-nxgipd v1.0.0beta
-=================
+nxgipd v1.0.0
+=============
 
 nxgipd is a monitoring daemon for UTC / GE Interlogix / Caddx alarm systems
 that use the Networx NX-584 protocol.
 
-Daemon process requires very minimal memory and cpu resource making it suitable
+Daemon process requires very minimal memory and CPU resource making it suitable
 to be run in on almost any hardware that runs Linux (or feel free to port 
 this to your favorite OS :-)
 nxgipd daemon process is meant to continuously monitor the alarm panel and
 log any activity into local log file and/or to syslog.
-Daemon process can run designated script as responses to different events
+Daemon process can run designated script as response to different events
 (such as alarm, zone tripped, etc.), making it easy to perform custom
 actions or monitor the alarm yourself.
 
@@ -101,8 +101,7 @@ SERIAL INTERFACE CONFIGURATION
 
 
 HISTORY
-	v1.0.0beta 
-		- support for running a script/command as response
+	v1.0.0  - support for running a script/command as response
 		  to events (alarm, zone tripped, etc..)
 		- support for sending X-10 commands via nxcmd
 		- support for sending Zone Bypass command via nxcmd
@@ -112,6 +111,7 @@ HISTORY
 		- new command nxcmd to send (keypad) commands to alarm panel
 		  (based on initial implmementation by Brian Whaley)
 		- new option -i for nxstat to display interface status
+		- lot of minor fixes
 	v0.9.0	- first public release
 
 
@@ -126,5 +126,5 @@ LATEST VERSION
 
 
 Timo <tjko@iki.fi>
-26-Jul-2015  $Id$
+08-Aug-2015  $Id$
 
