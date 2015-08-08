@@ -286,9 +286,9 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  change++;
 	  if (tmp[0]) strlcat(tmp,", ",sizeof(tmp));
 	  if (part->last_user == NX_NO_USER) 
-	    snprintf(tstr,sizeof(tstr),"User = <None>");
+	    snprintf(tstr,sizeof(tstr),"Last User = <None>");
 	  else 
-	    snprintf(tstr,sizeof(tstr),"User = %03u",part->last_user);
+	    snprintf(tstr,sizeof(tstr),"Last User = %03u",part->last_user);
 	  strlcat(tmp,tstr,sizeof(tmp));
 	}
 
