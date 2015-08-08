@@ -59,7 +59,7 @@ int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_s
   }
 
   *shmptr=seg;
-  strncpy((*shmptr)->shmversion,SHMVERSION,sizeof((*shmptr)->shmversion));
+  strlcpy((*shmptr)->shmversion,SHMVERSION,sizeof((*shmptr)->shmversion));
   (*shmptr)->pid=getpid();
   (*shmptr)->last_updated=0;
 

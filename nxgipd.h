@@ -6,7 +6,14 @@
 #ifndef _NXGIPD_H
 #define _NXGIPD_H 1
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include "nx-584.h"
+#if !HAVE_STRLCAT || !HAVE_STRLCPY
+#include "strl-funcs.h"
+#endif
+
 
 #define PRGNAME "nxgipd"
 

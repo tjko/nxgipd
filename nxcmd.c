@@ -284,8 +284,8 @@ int main(int argc, char **argv)
     memset(text2,0,sizeof(text2));
     if (args > 4) {
       sscanf(argv[optind+1],"%d",&keypad);
-      strncpy(text1,argv[optind+2],MESSAGE_LINE_LEN);
-      strncpy(text2,argv[optind+3],MESSAGE_LINE_LEN);
+      strlcpy(text1,argv[optind+2],sizeof(text1));
+      strlcpy(text2,argv[optind+3],sizeof(text2));
       sscanf(argv[optind+4],"%d",&msgtime);
     } 
     else 

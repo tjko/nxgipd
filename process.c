@@ -30,8 +30,8 @@
       v=t;								\
       if (logtext != NULL) {						\
 	if (tmp[0])							\
-	  strncat(tmp,", ",sizeof(tmp)-strnlen(tmp,sizeof(tmp)-1)-1);	\
-	strncat(tmp,logtext,sizeof(tmp)-strnlen(tmp,sizeof(tmp)-1)-1);	\
+	  strlcat(tmp,", ",sizeof(tmp));				\
+	strlcat(tmp,logtext,sizeof(tmp));				\
 	chg++;								\
       }									\
     }									\
@@ -269,12 +269,12 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  char tstr[64];
 	  part->last_user=msg->msg[5];
 	  change++;
-	  if (tmp[0]) strncat(tmp,", ",sizeof(tmp)-strnlen(tmp,sizeof(tmp)-1)-1);
+	  if (tmp[0]) strlcat(tmp,", ",sizeof(tmp));
 	  if (part->last_user == NX_NO_USER) 
 	    snprintf(tstr,sizeof(tstr),"User = <None>");
 	  else 
 	    snprintf(tstr,sizeof(tstr),"User = %03u",part->last_user);
-	  strncat(tmp,tstr,sizeof(tmp)-strnlen(tmp,sizeof(tmp)-1)-1);
+	  strlcat(tmp,tstr,sizeof(tmp));
 	}
 
 	if (change || change2) {
@@ -839,15 +839,16 @@ int read_program_data(int fd, int protocol, int device, int location, int mode, 
       switch (type) {
       case 0:
 	// binary
-	strncpy(tmp,(va&0x01?"1":"-"),2);
-	strncat(tmp,(va&0x02?"2":"-"),1);
-	strncat(tmp,(va&0x04?"3":"-"),1);
-	strncat(tmp,(va&0x08?"4":"-"),1);
-	strncat(tmp,(va&0x10?"5":"-"),1);
-	strncat(tmp,(va&0x20?"6":"-"),1);
-	strncat(tmp,(va&0x40?"7":"-"),1);
-	strncat(tmp,(va&0x80?"8":"-"),1);
-	strncat(tmp," ",1);
+	snprintf(tmp,sizeof(tmp),"[%c%c%c%c%c%c%c%c] ",
+		 (va&0x01?'1':'-'),
+		 (va&0x02?'2':'-'),
+		 (va&0x04?'3':'-'),
+		 (va&0x08?'4':'-'),
+		 (va&0x10?'5':'-'),
+		 (va&0x20?'6':'-'),
+		 (va&0x40?'7':'-'),
+		 (va&0x80?'8':'-')
+		 );
 	break;
       case 1:
 	// decimal
@@ -870,7 +871,7 @@ int read_program_data(int fd, int protocol, int device, int location, int mode, 
       snprintf(tmp,sizeof(tmp),"%02x",va);
     }
 
-    strncat(buf,tmp,16);
+    strlcat(buf,tmp,sizeof(buf));
   }
 
   *datatype = type;

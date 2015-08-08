@@ -23,7 +23,7 @@ int read_config(int fd, int protocol, uchar node, int location)
   uint loc;
   int maxloc = 512;
   int locstart = 0;
-  char tmp[16];
+
 
   printf("Scanning module %d\n",node);
 
@@ -81,15 +81,16 @@ int read_config(int fd, int protocol, uchar node, int location)
 
 	  switch (type) {
 	  case 0:
-	    strncpy(tmp,(va&0x01?"1":"-"),2);
-	    strncat(tmp,(va&0x02?"2":"-"),1);
-	    strncat(tmp,(va&0x04?"3":"-"),1);
-	    strncat(tmp,(va&0x08?"4":"-"),1);
-	    strncat(tmp,(va&0x10?"5":"-"),1);
-	    strncat(tmp,(va&0x20?"6":"-"),1);
-	    strncat(tmp,(va&0x40?"7":"-"),1);
-	    strncat(tmp,(va&0x80?"8":"-"),1);
-	    printf("[%s] ",tmp);
+	    printf("[%c%c%c%c%c%c%c%c] ",
+		     (va&0x01?'1':'-'),
+		     (va&0x02?'2':'-'),
+		     (va&0x04?'3':'-'),
+		     (va&0x08?'4':'-'),
+		     (va&0x10?'5':'-'),
+		     (va&0x20?'6':'-'),
+		     (va&0x40?'7':'-'),
+		     (va&0x80?'8':'-')
+		     );
 	    break;
 	  case 1:
 	    if (nibble) printf("%01d ",va);

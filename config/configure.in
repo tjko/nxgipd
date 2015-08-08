@@ -58,6 +58,9 @@ AC_SUBST(GNUGETOPT)
 
 dnl AC_CHECK_FUNCS(mkstemps)
 
+AC_CHECK_FUNCS(strlcat, break, [STRLFUNCS="strl-funcs.o"])
+AC_CHECK_FUNCS(strlcpy, break, [STRLFUNCS="strl-funcs.o"])
+AC_SUBST(STRLFUNCS)
 
 
 

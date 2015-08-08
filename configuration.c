@@ -74,10 +74,10 @@ const char* xml_whitespace_cb(mxml_node_t *node, int where)
 
 
 
-#define EXPAND_FILENAME(buf,dir,name) { \
-            if (name[0]=='/') { strncpy(buf,name,sizeof(buf)); }	\
-	    else { snprintf(buf,sizeof(buf),"%s/%s",dir,name); }	\
-	 }
+#define EXPAND_FILENAME(buf,dir,name) {					\
+    if (name[0]=='/') { strlcpy(buf,name,sizeof(buf)); }		\
+    else { snprintf(buf,sizeof(buf),"%s/%s",dir,name); }		\
+  }
 
 
 int load_config(const char *configfile, nx_configuration_t *config, int logtest)
