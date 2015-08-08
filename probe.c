@@ -1,6 +1,6 @@
 /* probe.c
  *
- * Copyright (C) 2013 Timo Kokkonen.
+ * Copyright (C) 2013-2015 Timo Kokkonen.
  * All Rights Reserved.
  */
 
@@ -21,7 +21,7 @@ int read_config(int fd, int protocol, uchar node, int location)
   nxmsg_t msgout,msgin,msgin2;
   int ret,i,nibble,size,len,type;
   uint loc;
-  int maxloc = 512;
+  int maxloc = NX_LOGICAL_LOCATION_MAX;
   int locstart = 0;
 
 
@@ -110,7 +110,11 @@ int read_config(int fd, int protocol, uchar node, int location)
 	printf("\n");
 	
       } else {
-	printf("Location=%03d: failed to get data (reply %02x)\n",loc, msgin.msgnum & NX_MSG_MASK);
+	if ((msgin.msgnum & NX_MSG_MASK) == NX_MSG_REJECTED) {
+	  printf("Location=%03d: Invalid location (not used)\n",loc);
+	} else {
+	  printf("Location=%03d: failed to get data (reply %02x)\n",loc, msgin.msgnum & NX_MSG_MASK);
+	}
       }
     } else {
       printf("Location=%03d: no reply\n",loc);
