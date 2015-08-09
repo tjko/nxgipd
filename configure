@@ -3891,6 +3891,17 @@ done
 
 
 
+for ac_func in execvpe
+do :
+  ac_fn_c_check_func "$LINENO" "execvpe" "ac_cv_func_execvpe"
+if test "x$ac_cv_func_execvpe" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_EXECVPE 1
+_ACEOF
+
+fi
+done
+
 
 for ac_func in strlcat
 do :

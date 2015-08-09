@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <time.h>
 #include "nx-584.h"
 #include "nxgipd.h"

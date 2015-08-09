@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
 #include <mxml.h>
 #include "nx-584.h"
 #include "nxgipd.h"

@@ -57,6 +57,7 @@ AC_CHECK_FUNCS(getopt_long, break, [GNUGETOPT="getopt.o getopt1.o"])
 AC_SUBST(GNUGETOPT)
 
 dnl AC_CHECK_FUNCS(mkstemps)
+AC_CHECK_FUNCS(execvpe)
 
 AC_CHECK_FUNCS(strlcat, break, [STRLFUNCS="strl-funcs.o"])
 AC_CHECK_FUNCS(strlcpy, break, [STRLFUNCS="strl-funcs.o"])

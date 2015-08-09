@@ -94,10 +94,17 @@ void run_trigger_program(const char **envv)
        maybe someday Linux will have closefrom() ... */
     for (fd=3; fd<32; fd++) close(fd);
 
+#ifdef HAVE_EXECVPE
     if (execvpe((const char *)config->alarm_program,(char *const*)argv,(char *const*)env) < 1) {
       logmsg(0,"run_trigger_program(): excecvpe(%s,...) failed %d (%s)",
 	     config->alarm_program,errno,strerror(errno));
     }  
+#else
+    if (execve((const char *)config->alarm_program,(char *const*)argv,(char *const*)env) < 1) {
+      logmsg(0,"run_trigger_program(): excecve(%s,...) failed %d (%s)",
+	     config->alarm_program,errno,strerror(errno));
+    }  
+#endif
   }
   else {
     logmsg(3,"trigger (child) process created: pid=%u", pid);
