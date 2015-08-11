@@ -172,7 +172,7 @@ typedef struct nx_configuration {
   char *serial_device;
   char *serial_speed;
   uchar serial_protocol;
-  uchar zones;
+  int   zones;
   uchar partitions;
   int   timesync;
   int   statuscheck;
