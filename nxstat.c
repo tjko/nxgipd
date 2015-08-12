@@ -470,7 +470,7 @@ int main(int argc, char **argv)
 
   printf("NX-8/NX-8V2/NX-8E Alarm Panel status\n\n");
 
-  printf(" Active Partitions: %-12d    Interface version: %s\n",apart,istatus->version);
+  printf(" Active Partitions: %-12d     Firmware version: %s\n",apart,istatus->version);
   printf("      Active Zones: %-12d             Panel ID: %d\n",azones,astat->panel_id);
   printf("      Phone in-use: %-12s             AC Power: %s\n",
 	 (astat->off_hook?"Panel":(astat->house_phone_offhook?"House-Phone":"NO")),
