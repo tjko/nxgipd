@@ -369,7 +369,7 @@ int main(int argc, char **argv)
       for (i=0;i<len;i+=2) {
 	if (!isdigit(pin[i]) || !isdigit(pin[i+1]))
 	  die("invalid PIN (PIN can only contain numbers)");
-	ipcmsg.data[offset++] = ( ((pin[i] - '0') << 4) | (pin[i+1] - '0') );
+	ipcmsg.data[offset++] = ( ((pin[i+1] - '0') << 4) | (pin[i] - '0') );
       }
       
       /* clear PIN from memory */
