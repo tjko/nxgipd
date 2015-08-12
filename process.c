@@ -1081,6 +1081,7 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
 {
   int ret;
   nxmsg_t msgout,msgin;
+  int skip_zone_names = 0;
   int i;
 
 
@@ -1121,7 +1122,7 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
   }
   if ((istatus->sup_cmd_msgs[0] & 0x08) == 0) {
     logmsg(0,"Zone Name Request command not enabled");
-    die("Zone Name Request command not enabled");
+    skip_zone_names=1;
   }
   if ((istatus->sup_cmd_msgs[0] & 0x10) == 0) {
     logmsg(0,"Zone Status Request command not enabled");
@@ -1165,13 +1166,24 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
   for (i=0;i<astat->last_zone;i++) {
     astat->zones[i].valid=1;
 
-    msgout.msgnum=NX_ZONE_NAME_REQ;
-    msgout.len=2;
-    msgout.msg[0]=i;
-    ret=nx_send_message(fd,protocol,&msgout,5,3,NX_ZONE_NAME_MSG,&msgin);
-    if (ret != 1 || msgin.msgnum != NX_ZONE_NAME_MSG) return -4;
-    process_message(&msgin,1,0,astat,istatus);
+    /* get zone name */
+    if (skip_zone_names) {
+      snprintf(astat->zones[i].name,sizeof(astat->zones[i].name),"Zone %02d",i+1);
+    } else {
+      msgout.msgnum=NX_ZONE_NAME_REQ;
+      msgout.len=2;
+      msgout.msg[0]=i;
+      ret=nx_send_message(fd,protocol,&msgout,5,3,NX_ZONE_NAME_MSG,&msgin);
+      if (ret != 1 || msgin.msgnum != NX_ZONE_NAME_MSG) { 
+	logmsg(1,"failed to get name for zone %d (no NX-148E present?)",i+1);
+	snprintf(astat->zones[i].name,sizeof(astat->zones[i].name),"Zone %02d",i+1);
+	skip_zone_names++;
+      } else {
+	process_message(&msgin,1,0,astat,istatus);
+      }
+    } 
 
+    /* get zone status */
     msgout.msgnum=NX_ZONE_STATUS_REQ;
     msgout.len=2;
     msgout.msg[0]=i;

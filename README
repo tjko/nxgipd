@@ -102,6 +102,8 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
 	v1.0.1beta
+		- add support for systems withouth zone names (NX-148E)
+		- fix to PIN number ordering in nxmcd (thanks to Dogora)
 		- minor tweaks to allow compiling on OSX (and other BSDs)...
 	v1.0.0  - support for running a script/command as response
 		  to events (alarm, zone tripped, etc..)
