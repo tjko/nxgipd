@@ -318,7 +318,7 @@ int main(int argc, char **argv)
 
   printf("Establishing communications...\n");
 
-  /* clear anypending messages */
+  /* clear any pending messages */
   do {
     ret=nx_receive_message(fd,config->serial_protocol,&msgin,1);
   } while (ret==1);
@@ -342,7 +342,7 @@ int main(int argc, char **argv)
     die("failed to estabilish communications with NX device");
   }
   process_message(&msgin,1,0,astat,istatus);
-  printf("Interface version v%s detected\n",istatus->version);
+  printf("Firmware version v%s detected\n",istatus->version);
 
 
   if (scan_mode > 0) {
