@@ -398,7 +398,7 @@ int main(int argc, char **argv)
 
   snprintf(shm->daemon_version,sizeof(shm->daemon_version),"v%s (%s)",VERSION,BUILDDATE);
   logmsg(0,"Program started: %s v%s (%s)",PRGNAME,VERSION,BUILDDATE);
-  logmsg(1,"NX interface version v%s detected",istatus->version);
+  logmsg(1,"NX Firmware version v%s detected",istatus->version);
 
   if (log_mode > 0) {
     printf("Dumping panel log...");

@@ -81,15 +81,14 @@ int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_s
   (*shmptr)->last_updated=0;
 
 
-  /* initialize IPC message queue */
-     
-
   return 0;
 }
 
 
+
 int init_message_queue(int msgkey, int msgmode)
 {
+  /* initialize IPC message queue */
   int id = msgget(msgkey,((msgmode&0777)|IPC_CREAT|IPC_EXCL));
   
   if (id < 0) {

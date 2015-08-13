@@ -67,7 +67,7 @@ SERIAL INTERFACE CONFIGURATION
 
        For this program to work, the NX-584 interface module (or the built-in 
        serial port in NX-8E) must be configured first. For detailed 
-       instructions, how to do that see the corresponding installation manuals.
+       instructions on how to do that, see the corresponding installation manuals.
 
        Recommended configuration settings:
 
@@ -102,7 +102,7 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
 	v1.0.1beta
-		- add support for systems withouth zone names (NX-148E)
+		- add support for systems withouth zone names (no NX-148E)
 		- fix to PIN number ordering in nxmcd (thanks to Dogora)
 		- minor tweaks to allow compiling on OSX (and other BSDs)...
 	v1.0.0  - support for running a script/command as response
