@@ -42,9 +42,15 @@
 #define NX_NO_USER               98 
 
 /* module numbers */
-#define NX_MODULE_CONTROL_PANEL		8
-#define NX_MODULE_NX584	                72
-#define NX_MODULE_NX592                 78
+#define NX_MODULE_CONTROL_PANEL         8
+#define NX_MODULE_NX540			40
+#define NX_MODULE_NX2192E		44
+#define NX_MODULE_NX534			64
+#define NX_MODULE_NX584E                72
+#define NX_MODULE_NX582			77
+#define NX_MODULE_NX592E                78
+#define NX_MODULE_NX590E		79
+#define NX_MODULE_NX320			84
 #define NX_MODULE_KEYPAD1		192
 #define NX_MODULE_KEYPAD2		200
 #define NX_MODULE_KEYPAD3		208
@@ -55,6 +61,8 @@
 #define NX_MODULE_KEYPAD8		248
 #define NX_MODULE_VIRTUAL_KEYPAD	248
 
+/* formula to calculate keypad address: num = 1..8, partition = 1..8 */
+#define NX_MODULE_KEYPAD(num,partition)  (NX_MODULE_KEYPAD1 + (num-1)*8 + (partition-1))
 
 /* message types used in gateway interface protocol */
 
