@@ -31,16 +31,12 @@ AC_ARG_WITH(libmxml, [  --with-libmxml=DIR	  libmxml is installed in ],
 
 dnl Checks for libraries.
 
-dnl AC_CHECK_LIB(mxml, mxmlLoadFile, ,[
-dnl echo "Cannot find libmxml or you have too old version (2.6 or later required)."
-dnl exit 1
-dnl ])
-
-AC_SEARCH_LIBS([mxmlLoadFile], [mxml],,[
-  AC_SEARCH_LIBS([mxmlLoadFile], [mxml],,[
-    AC_MSG_ERROR([cannot find libmxml])
-  ],[pthread])
+dnl libmxml often requires libpthread so try detecting that...
+AC_SEARCH_LIBS([mxmlLoadFile], [mxml], [], [
+ dnl HACK use different functon as previous test get cached...
+ AC_SEARCH_LIBS([mxmlLoadFd], [mxml], [ LIBS="$LIBS -lpthread" ], AC_MSG_ERROR([cannot find libmxml]),[-lpthread])
 ])
+
 
 dnl AC_CHECK_LIB(m, round)
 

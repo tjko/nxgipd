@@ -3325,7 +3325,6 @@ fi
 
 
 
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing mxmlLoadFile" >&5
 $as_echo_n "checking for library containing mxmlLoadFile... " >&6; }
 if ${ac_cv_search_mxmlLoadFile+:} false; then :
@@ -3382,9 +3381,9 @@ if test "$ac_res" != no; then :
 
 else
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing mxmlLoadFile" >&5
-$as_echo_n "checking for library containing mxmlLoadFile... " >&6; }
-if ${ac_cv_search_mxmlLoadFile+:} false; then :
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing mxmlLoadFd" >&5
+$as_echo_n "checking for library containing mxmlLoadFd... " >&6; }
+if ${ac_cv_search_mxmlLoadFd+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_func_search_save_LIBS=$LIBS
@@ -3397,11 +3396,11 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char mxmlLoadFile ();
+char mxmlLoadFd ();
 int
 main ()
 {
-return mxmlLoadFile ();
+return mxmlLoadFd ();
   ;
   return 0;
 }
@@ -3411,39 +3410,38 @@ for ac_lib in '' mxml; do
     ac_res="none required"
   else
     ac_res=-l$ac_lib
-    LIBS="-l$ac_lib pthread $ac_func_search_save_LIBS"
+    LIBS="-l$ac_lib -lpthread $ac_func_search_save_LIBS"
   fi
   if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_mxmlLoadFile=$ac_res
+  ac_cv_search_mxmlLoadFd=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext
-  if ${ac_cv_search_mxmlLoadFile+:} false; then :
+  if ${ac_cv_search_mxmlLoadFd+:} false; then :
   break
 fi
 done
-if ${ac_cv_search_mxmlLoadFile+:} false; then :
+if ${ac_cv_search_mxmlLoadFd+:} false; then :
 
 else
-  ac_cv_search_mxmlLoadFile=no
+  ac_cv_search_mxmlLoadFd=no
 fi
 rm conftest.$ac_ext
 LIBS=$ac_func_search_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_mxmlLoadFile" >&5
-$as_echo "$ac_cv_search_mxmlLoadFile" >&6; }
-ac_res=$ac_cv_search_mxmlLoadFile
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_mxmlLoadFd" >&5
+$as_echo "$ac_cv_search_mxmlLoadFd" >&6; }
+ac_res=$ac_cv_search_mxmlLoadFd
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
+   LIBS="$LIBS -lpthread"
 else
-
-    as_fn_error $? "cannot find libmxml" "$LINENO" 5
-
+  as_fn_error $? "cannot find libmxml" "$LINENO" 5
 fi
 
 
 fi
+
 
 
 
