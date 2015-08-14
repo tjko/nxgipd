@@ -1,5 +1,5 @@
-nxgipd v1.0.1beta
-=================
+nxgipd v1.0.1
+=============
 
 nxgipd is a monitoring daemon for UTC / GE Interlogix / Caddx alarm systems
 that use the Networx NX-584 protocol.
