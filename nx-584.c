@@ -450,7 +450,7 @@ int nx_write_packet(int fd, nxmsg_t *msg, int protocol)
   
   if (protocol == NX_PROTOCOL_ASCII) {
     *p++=0x0a;
-    sprintf((char*)p,"%02X%02X",msg->len,msg->msgnum);
+    snprintf((char*)p,5,"%02X%02X",msg->len,msg->msgnum);
     p+=4;
   } else {
     *p++=0x7e;
@@ -463,7 +463,7 @@ int nx_write_packet(int fd, nxmsg_t *msg, int protocol)
 
   for(i=0;i<msg->len-1;i++) {
     if (protocol == NX_PROTOCOL_ASCII) {
-      sprintf((char*)p,"%02X",msg->msg[i]);
+      snprintf((char*)p,3,"%02X",msg->msg[i]);
       p+=2;
     } else {
       byte_stuff(&p,msg->msg[i]);
@@ -480,7 +480,7 @@ int nx_write_packet(int fd, nxmsg_t *msg, int protocol)
 #endif
 
   if (protocol == NX_PROTOCOL_ASCII) {
-    sprintf((char*)p,"%02X%02X",msg->sum1,msg->sum2);
+    snprintf((char*)p,5,"%02X%02X",msg->sum1,msg->sum2);
     p+=4;
     *p++=0x0d;
     *p=0;

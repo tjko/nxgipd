@@ -45,6 +45,7 @@ REQUIREMENTS
 
 TESTED PLATFORMS
 	Linux (Debian)
+	OpenBSD
 
 
 INSTALLATION
@@ -101,8 +102,7 @@ SERIAL INTERFACE CONFIGURATION
 
 
 HISTORY
-	v1.0.1beta
-		- add support for systems withouth zone names (no NX-148E)
+	v1.0.1  - add support for systems withouth zone names (no NX-148E)
 		- fix to PIN number ordering in nxmcd (thanks to Dogora)
 		- minor tweaks to allow compiling on OSX (and other BSDs)...
 	v1.0.0  - support for running a script/command as response
@@ -130,5 +130,5 @@ LATEST VERSION
 
 
 Timo <tjko@iki.fi>
-08-Aug-2015  $Id$
+13-Aug-2015  $Id$
 
