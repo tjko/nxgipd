@@ -32,6 +32,7 @@
 #define NX_IS_ACKMSG(n)  ((n & NX_MSG_ACK_FLAG) == NX_MSG_ACK_FLAG)
 #define NX_IS_NONREPORTING_EVENT(type)  ( (type & 0x80) == 0x80 ? 1 : 0 ) 
 #define NX_IS_REPORTING_EVENT(type)  ( (type & 0x80) == 0x80 ? 0 : 1 ) 
+#define NX_EVENT_TYPE_MASK    0x7f
 
 #define NX_PARTITIONS_MAX        8
 #define NX_ZONES_MAX             256

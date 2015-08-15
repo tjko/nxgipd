@@ -149,7 +149,7 @@ const char* nx_log_event_text(uchar eventnum)
   int i=0;
 
   while(nx_log_event_types[i].description) {
-    if (nx_log_event_types[i].type == (eventnum & 0x7f))
+    if (nx_log_event_types[i].type == (eventnum & NX_EVENT_TYPE_MASK))
       return nx_log_event_types[i].description;
     i++;
   }
@@ -164,7 +164,7 @@ int nx_log_event_partinfo(uchar eventnum)
   int i=0;
 
   while(nx_log_event_types[i].description) {
-    if (nx_log_event_types[i].type == (eventnum & 0x7f)) 
+    if (nx_log_event_types[i].type == (eventnum & NX_EVENT_TYPE_MASK)) 
       return nx_log_event_types[i].partition;
     i++;
   }
@@ -178,7 +178,7 @@ char nx_log_event_valtype(uchar eventnum)
   int i=0;
 
   while(nx_log_event_types[i].description) {
-    if (nx_log_event_types[i].type == (eventnum & 0x7f)) 
+    if (nx_log_event_types[i].type == (eventnum & NX_EVENT_TYPE_MASK)) 
       return nx_log_event_types[i].valtype;
     i++;
   }
@@ -200,7 +200,7 @@ const char* nx_log_event_str(const nx_log_event_t *event)
 
   /* search for event type */
   while (nx_log_event_types[i].description) {
-    if (nx_log_event_types[i].type == (event->type & 0x7f)) ev=i;
+    if (nx_log_event_types[i].type == (event->type & NX_EVENT_TYPE_MASK)) ev=i;
     i++;
   }
 
@@ -224,7 +224,7 @@ const char* nx_log_event_str(const nx_log_event_t *event)
 	     (NX_IS_NONREPORTING_EVENT(event->type)?"non-reporting ":""),
 	     event->no+1,event->logsize,
 	     event->month,event->day,event->hour,event->min,
-	     (event->type & 0x7f),event->num,event->part);
+	     (event->type & NX_EVENT_TYPE_MASK),event->num,event->part);
   }
   
   str[sizeof(str)-1]=0;
@@ -926,7 +926,7 @@ void nx_print_msg(FILE *fp, nxmsg_t *msg)
     DEBUG_PRINT_HEADER("LOG EVENT MESSAGE",msg);
     DEBUG_PRINT_UCHAR("Event number",msg->msg[0]);
     DEBUG_PRINT_UCHAR("Total log size",msg->msg[1]);
-    DEBUG_PRINT_INT("Event type",(msg->msg[2]&0x7f));
+    DEBUG_PRINT_INT("Event type",(msg->msg[2]&NX_EVENT_TYPE_MASK));
     DEBUG_PRINT_UCHAR("Zone/User/Device number",msg->msg[3]);
     DEBUG_PRINT_UCHAR("Partition number",msg->msg[4]);
     fprintf(fp,"\t%42s: %02d/%02d %02d:%02d\n","Timestamp (mm/dd hh:mm)",msg->msg[5],msg->msg[6],msg->msg[7],msg->msg[8]);
