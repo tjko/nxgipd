@@ -1,5 +1,5 @@
-nxgipd v1.0.1
-=============
+nxgipd v1.1beta
+===============
 
 nxgipd is a monitoring daemon for UTC / GE Interlogix / Caddx alarm systems
 that use the Networx NX-584 protocol.
@@ -53,8 +53,8 @@ INSTALLATION
 	tar file, run configure,  make necessary changes to the Makefile,  
 	and then compile the program. You may want do something like this:
 
-		tar xzvf nxgipd-1.0.1.tar.gz
-		cd nxgipd-1.0.1
+		tar xzvf nxgipd-1.1.0.tar.gz
+		cd nxgipd-1.1.0
 		./configure
 		make
 		make strip
@@ -102,6 +102,9 @@ SERIAL INTERFACE CONFIGURATION
 
 
 HISTORY
+        v1.1beta
+		- add --csv option to nxstat command
+		- minor fixes
 	v1.0.1  - add support for systems withouth zone names (no NX-148E)
 		- fix to PIN number ordering in nxmcd (thanks to Dogora)
 		- minor tweaks to allow compiling on OSX (and other BSDs)...

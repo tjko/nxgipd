@@ -49,8 +49,10 @@
 
 
 
-#define PRINT_SUP_FLAG(name,val,flag)  printf(" %40s: %s\n",name,(val & flag ? "Enabled" : "Disabled"))
-#define PRINT_FLAG(name,val) printf(" %40s: %s\n",name,(val ? "Active" : "Inactive"))
+#define PRINT_SUP_FLAG(name,val,flag)  printf((csv_mode?"%s,%s\n":" %40s: %s\n"), \
+					      name,(val & flag ? "Enabled" : "Disabled"))
+#define PRINT_FLAG(name,val) printf((csv_mode?"%s,%s\n":" %40s: %s\n"), \
+				    name,(val ? "Active" : "Inactive"))
 
 int verbose_mode = 0;
 
@@ -81,9 +83,11 @@ int main(int argc, char **argv)
   int zone_info = -1;
   int partition_info = -1;
   int system_status = 0;
+  int csv_mode = 0;
 
   struct option long_options[] = {
     {"config",1,0,'c'},
+    {"csv",0,0,'C'},
     {"help",0,0,'h'},
     {"interface",0,0,'i'},
     {"log",2,0,'l'},
@@ -100,11 +104,15 @@ int main(int argc, char **argv)
 
   umask(022);
 
-  while ((opt=getopt_long(argc,argv,"ip:svVhc:l::zZ",long_options,&opt_index)) != -1) {
+  while ((opt=getopt_long(argc,argv,"ip:svVhCc:l::zZ",long_options,&opt_index)) != -1) {
     switch (opt) {
       
     case 'c':
       config_file=strdup(optarg);
+      break;
+
+    case 'C':
+      csv_mode=1;
       break;
 
     case 'i':
@@ -159,6 +167,7 @@ int main(int argc, char **argv)
       fprintf(stderr,
 	      "  --config=<configfile>   use specified config file\n"
 	      "  -c <configfile>\n"
+	      "  --csv, -C               output in CSV format\n"
 	      "  --help, -h              display this help and exit\n"
 	      "  --interface, -i         display interface status\n"
 	      "  --log, -l               display full panel log\n"
@@ -243,11 +252,15 @@ int main(int argc, char **argv)
   if (interface_status) {
     char *c = istatus->sup_cmd_msgs;
     char *t = istatus->sup_trans_msgs;
-    printf("NX-584 Interface status\n\n");
 
-    printf(" %40s: %s\n","Firmware Version",istatus->version);
+    if (csv_mode) {
+      printf("interface_feature,status\n");
+    } else {
+      printf("NX-584 Interface status\n\n");
+      printf(" %40s: %s\n","Firmware Version",istatus->version);
+      printf("Commands:\n");
+    }
 
-    printf("Commands:\n");
     PRINT_SUP_FLAG("Interface Configuration Request",c[0],0x02);
     PRINT_SUP_FLAG("Zone Name Request",c[0],0x08);
     PRINT_SUP_FLAG("Zone Status Request",c[0],0x10);
@@ -274,7 +287,9 @@ int main(int argc, char **argv)
     PRINT_SUP_FLAG("Secondary Keypad Function",c[3],0x40);
     PRINT_SUP_FLAG("Zone Bypass Toggle",c[3],0x80);
     
-    printf("Transition Messages:\n");
+    if (!csv_mode)
+      printf("Transition Messages:\n");
+
     PRINT_SUP_FLAG("Interface Configuration Message",t[0],0x02);
     PRINT_SUP_FLAG("Zone Status Message",t[0],0x10);
     PRINT_SUP_FLAG("Zones Snapshot Message",t[0],0x20);
@@ -285,13 +300,20 @@ int main(int argc, char **argv)
     PRINT_SUP_FLAG("Log Event Message",t[1],0x04);
     PRINT_SUP_FLAG("Keypad Message Received",t[1],0x04);
 
-    printf("\n");
+    if (!csv_mode)
+      printf("\n");
+
     return 0;
   } 
 
   /* display (detailed) system status */
   if (system_status) {
-    printf("Alarm Panel Status:\n\n");
+    if (csv_mode) {
+      printf("panel_feature,status\n");
+    } else {
+      printf("Alarm Panel Status:\n\n");
+    }
+
     PRINT_FLAG("Line seizure",astat->line_seizure);
     PRINT_FLAG("Off Hook",astat->off_hook);
     PRINT_FLAG("Initial handshake received",astat->handshake_rcvd);
@@ -347,17 +369,27 @@ int main(int argc, char **argv)
     PRINT_FLAG("Last read was off hook",astat->offhook_memory);
     PRINT_FLAG("Listen-in requested",astat->listenin_request);
     PRINT_FLAG("Listen-in trigger",astat->listenin_trigger);
+
+    if (!csv_mode)
+      printf("\n");
+
     return 0;
   }
 
+
   /* display detailed partition status */
   if (partition_info > 0) {
-    printf("Partition %d Status:\n\n",partition_info);
     nx_partition_status_t *p = &astat->partitions[partition_info-1];
 
     if (!p->valid) {
-      warn("partition not active");
+      warn("Partition %d not active",partition_info);
       return 1;
+    }
+
+    if (csv_mode) {
+      printf("partition_feature,status\n");
+    } else {
+      printf("Partition %d Status:\n\n",partition_info);
     }
 
     PRINT_FLAG("Ready to arm",p->ready);
@@ -388,23 +420,34 @@ int main(int argc, char **argv)
     PRINT_FLAG("Keyswitch armed",p->keyswitch_armed);
     PRINT_FLAG("Zone bypassed",p->zones_bypassed);
 
-    printf("\n");
-    printf(" %40s: %d\n","Last User",p->last_user);
+    if (csv_mode) {
+      printf("Last User,%d\n",p->last_user);
+    } else {
+      printf("\n");
+      printf(" %40s: %d\n","Last User",p->last_user);
+    } 
+
     return 0;
   }
 
 
   /* display zone status flags */
   if (zone_info > 0) {
-    printf("Zone Status Flags:\n        Zone: %d\n",zone_info);
     nx_zone_status_t *z = &astat->zones[zone_info-1];
     uchar *f;
     if (z->valid != 1)
-      die("not a valid/active zone");
+      die("not a valid/active zone: %d",zone_info);
 
-    printf("   Zone Name: %s\n",z->name);
+    if (csv_mode) {
+      printf("zone_status_flag,status\n");
+      printf("Zone Name,%s\n",z->name);
+      printf("Last updated,%s\n",(z->last_updated > 0 ?timestampstr(z->last_updated):"n/a"));
+    } else {
+      printf("Zone Status Flags:\n        Zone: %d\n",zone_info);
+      printf("   Zone Name: %s\n",z->name);
+      printf("Last updated: %s\n",(z->last_updated > 0 ?timestampstr(z->last_updated):"n/a"));
+    }
 
-    printf("Last updated: %s\n",(z->last_updated > 0 ?timestampstr(z->last_updated):"n/a"));
     //printf("flags: %02x %02x %02x\n",z->type_flags[0],z->type_flags[1],z->type_flags[2]);
     f=z->type_flags;
 
@@ -451,15 +494,33 @@ int main(int argc, char **argv)
     //printf("Panel Event Log: %d (%d)\n",log_mode,size);
     if (log_mode > size) log_mode=size;
 
+    if (csv_mode)
+      printf("num,logsize,type,reporting,month,day,hour,min,zone,user,description\n");
+
     for (i=p-log_mode+1;i<=p;i++) {
       int pos = i;
-      if (pos < 0) { pos=size+pos; }
-      //printf("%d %d : %d\n",p,i,pos);
+
+      if (pos < 0) 
+	pos=size+pos; 
       if ((astat->log[pos].msgno & NX_MSG_MASK ) == NX_LOG_EVENT_MSG) {
-	s=nx_log_event_str(&astat->log[pos]);
+	  nx_log_event_t *l = &astat->log[pos];
+	s=nx_log_event_str(l);
 	if ((e=strstr(s,": ")) != NULL) e=e+2;
 	else  e=s;
-	printf("%s\n",e);
+
+	if (csv_mode) {
+	  char valtype = nx_log_event_valtype(l->type);
+	  s=nx_log_event_text(l->type);
+	  printf("%u,%u,%u,%c,%d,%d,%d,%d,%d,%d,%s\n",l->no+1,l->logsize,
+		 (l->type & NX_EVENT_TYPE_MASK),
+		 (NX_IS_REPORTING_EVENT(l->type)?'Y':'N'),
+		 l->month,l->day,l->hour,l->min,
+		 (valtype=='Z'?l->num:-1),
+		 (valtype=='U'?l->num:-1),
+		 s);
+	} else {
+	  printf("%s\n",e);
+	}
       }
     }
     return 0;
@@ -467,35 +528,55 @@ int main(int argc, char **argv)
 
 
 
+  /* main status display */
 
-  printf("NX-8/NX-8V2/NX-8E Alarm Panel status\n\n");
+  if (!csv_mode) {
+    printf("NX-8/NX-8V2/NX-8E Alarm Panel status\n\n");
 
-  printf(" Active Partitions: %-12d     Firmware version: %s\n",apart,istatus->version);
-  printf("      Active Zones: %-12d             Panel ID: %d\n",azones,astat->panel_id);
-  printf("      Phone in-use: %-12s             AC Power: %s\n",
-	 (astat->off_hook?"Panel":(astat->house_phone_offhook?"House-Phone":"NO")),
-	 (astat->ac_fail ? "FAIL" : (astat->ac_power?"OK":"OFF")));
-  printf("            Tamper: %-12s              Battery: %s\n",
-	 (astat->box_tamper?"Panel":(astat->siren_tamper?"Siren":(astat->exp_tamper?"Expansion":"OK"))),
-	 (astat->low_battery?"LOW":"OK"));
-  printf("             Phone: %-12s                 Fuse: %s\n",
-	 (astat->phone_fault?"Fault (Phone)":(astat->phone_line_fault?"Fault (Line)":"OK")),
-	 (astat->fuse_fault?"Fail":"OK"));
-  printf("    Communications: %-12s               Ground: %s\n",
-	 (astat->fail_to_comm?"FAIL":"OK"),
-	 (astat->ground_fault?"FAULT":"OK"));
+    printf(" Active Partitions: %-12d     Firmware version: %s\n",apart,istatus->version);
+    printf("      Active Zones: %-12d             Panel ID: %d\n",azones,astat->panel_id);
+    printf("      Phone in-use: %-12s             AC Power: %s\n",
+	   (astat->off_hook?"Panel":(astat->house_phone_offhook?"House-Phone":"NO")),
+	   (astat->ac_fail ? "FAIL" : (astat->ac_power?"OK":"OFF")));
+    printf("            Tamper: %-12s              Battery: %s\n",
+	   (astat->box_tamper?"Panel":(astat->siren_tamper?"Siren":(astat->exp_tamper?"Expansion":"OK"))),
+	   (astat->low_battery?"LOW":"OK"));
+    printf("             Phone: %-12s                 Fuse: %s\n",
+	   (astat->phone_fault?"Fault (Phone)":(astat->phone_line_fault?"Fault (Line)":"OK")),
+	   (astat->fuse_fault?"Fail":"OK"));
+    printf("    Communications: %-12s               Ground: %s\n",
+	   (astat->fail_to_comm?"FAIL":"OK"),
+	   (astat->ground_fault?"FAULT":"OK"));
+    printf("\n");
 
-  printf("\n");
-
-  printf("Part  Ready Armed  Stay Instant Chime  Fire Delay Alarm Sound\n");
-  printf("----  ----- -----  ---- ------- -----  ---- ----- ----- ---------\n");
+    printf("Part  Ready Armed  Stay Instant Chime  Fire Delay Alarm Sound\n");
+    printf("----  ----- -----  ---- ------- -----  ---- ----- ----- ---------\n");
+  } else {
+    printf("system,active_partitions,fw_version,active_zones,panel_id,phone_in_use,ac_power," 
+	   "tamper,battery,phone,fuse,communications,ground\n");
+    printf("system,%d,%s,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s\n",
+	   apart,istatus->version,
+	   azones,astat->panel_id,
+	   (astat->off_hook?"Panel":(astat->house_phone_offhook?"House-Phone":"NO")),
+	   (astat->ac_fail ? "FAIL" : (astat->ac_power?"OK":"OFF")),
+	   (astat->box_tamper?"Panel":(astat->siren_tamper?"Siren":(astat->exp_tamper?"Expansion":"OK"))),
+	   (astat->low_battery?"LOW":"OK"),
+	   (astat->phone_fault?"Fault (Phone)":(astat->phone_line_fault?"Fault (Line)":"OK")),
+	   (astat->fuse_fault?"Fail":"OK"),
+	   (astat->fail_to_comm?"FAIL":"OK"),
+	   (astat->ground_fault?"FAULT":"OK")
+	   );
+    printf("\n");
+    printf("partition,num,ready,armed,stay,instant,chime,fire,delay,alarm,sound\n");
+  }
   
   for (i=0;i<astat->last_partition;i++) {
     nx_partition_status_t *p = &astat->partitions[i];
 
     if (!p->valid) continue;
     
-    printf("%-4d  %-5s %-5s  %-4s %-7s %-5s  %-4s %-5s %-5s %-5s\n",
+    printf((csv_mode ? "partition,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s\n":
+	               "%-4d  %-5s %-5s  %-4s %-7s %-5s  %-4s %-5s %-5s %-5s\n"),
 	   i+1,
 	   (p->ready?"Yes":"No"),
 	   (p->armed?"Yes":"No"),
@@ -510,8 +591,13 @@ int main(int argc, char **argv)
 
   }
 
-  printf("\n");
+  if (!csv_mode)
+    printf("\n");
   now=time(NULL);
+
+
+  if (csv_mode && zones_mode > 0) 
+    zones_mode=2;
 
   if (zones_mode==1) {
     nx_zone_status_t *zn;
@@ -543,9 +629,13 @@ int main(int argc, char **argv)
     nx_zone_status_t *zn;
     char tmp[16],tmp2[16];
 
-    printf("Zone  Name              Mode      Status  Last Fault/Trouble\n"
-	   "----  ----------------  --------  ------  --------------------------------\n"
-	   );
+    if (csv_mode) {
+      printf("\nzone,num,name,mode,status,last_fault\n");
+    } else {
+      printf("Zone  Name              Mode      Status  Last Fault/Trouble\n"
+	     "----  ----------------  --------  ------  --------------------------------\n"
+	     );
+    }
 
     for(i=0;i<azones;i++) {
       zn=&astat->zones[i];
@@ -560,7 +650,7 @@ int main(int argc, char **argv)
       tmp2[sizeof(tmp)-1]=0;
       
       if (strncmp(tmp2,zn->name,strlen(tmp2))!=0 || zn->last_updated > shm->daemon_started)
-	printf("%02d    %-16s  %-8s  %-6s  %s %s\n",
+	printf( (csv_mode ? "zone,%d,%s,%s,%s,%s,%s\n" : "%02d    %-16s  %-8s  %-6s  %s %s\n"),
 	       i+1,
 	       zn->name,
 	       (zn->bypass?"Bypassed":"Active"),
@@ -570,6 +660,10 @@ int main(int argc, char **argv)
 	       );
     }
   }
+
+
+  if (csv_mode)
+    return 0;
 
   if (astat->last_updated > lastparttime)
     lastparttime=astat->last_updated;
