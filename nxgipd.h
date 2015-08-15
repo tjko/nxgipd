@@ -249,6 +249,8 @@ int read_message_queue(int msgid, nx_ipc_msg_t *msg);
 /* probe.c */
 int read_config(int fd, int protocol, uchar node, int location);
 int probe_bus(int fd, int protocol);
+int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus, int verbose);
+
 
 /* process.c */
 void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_status_t *astat, nx_interface_status_t *istatus);

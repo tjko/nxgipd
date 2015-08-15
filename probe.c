@@ -187,4 +187,102 @@ int probe_bus(int fd, int protocol)
 }
 
 
+int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus, int verbose)
+{
+  nxmsg_t msgout,msgin;
+  int ret,retry,i;
+  uchar zonelist[4] = {192,48,16,8};
+  int maxzones = 0;
+  int maxparts = 0;
+  char *model = "Unknown";
+
+  printf("Detecting panel model...\n");
+
+  /* request interface configuration */
+  msgout.msgnum=NX_INT_CONFIG_REQ;
+  msgout.len=1;
+  retry=0;
+  do {
+    ret=nx_send_message(fd,config->serial_protocol,&msgout,5,3,NX_INT_CONFIG_MSG,&msgin);
+    if (ret < 0) warn("Failed to send message to panel\n");
+    if (ret == 0) warn("No response from panel\n");
+  } while (ret != 1 && retry++ < 3);
+  if (ret == 1) {
+    if (msgin.msgnum != NX_INT_CONFIG_MSG) {
+      warn("Panel refused interface status command\n");
+      return -1;
+    }
+    if (verbose) {
+      nx_print_msg(stdout,&msgin);
+    }
+  } else {
+    warn("failed to estabilish communications with NX device");
+    return -2;
+  }
+  process_message(&msgin,1,0,astat,istatus);
+
+
+  if ((istatus->sup_cmd_msgs[0] & 0x10) == 0) {
+    warn("Required Zone Status Request command not enabled");
+    return -3;
+  }
+
+
+  /* look for max zones supported */
+  for (i=0;i<4;i++) {
+    /* get zone status */
+    msgout.msgnum=NX_ZONE_STATUS_REQ;
+    msgout.len=2;
+    msgout.msg[0]=zonelist[i]-1;
+    ret=nx_send_message(fd,protocol,&msgout,5,3,NX_ZONE_STATUS_MSG,&msgin);
+    if (ret != 1 || msgin.msgnum != NX_ZONE_STATUS_MSG) {
+      printf("no reply for zone %d (%d)\n",zonelist[i],msgin.msgnum);
+    } else {
+      if (msgin.msg[1] != 0 && maxzones==0) {
+	maxzones=zonelist[i];
+	break;
+      }
+      //nx_print_msg(stdout,&msgin);
+      //for (j=0;j<7;j++) { printf(" %02x",msgin.msg[j]); }; printf(" (%d)\n",maxzones);
+    }
+  }
+  
+
+
+
+  if ((istatus->sup_cmd_msgs[0] & 0x80) == 0) {
+    warn("Required Partitions Snapshot Request command not enabled");
+    return -4;
+  }
+
+  /* look for max partitions supported */
+  msgout.msgnum=NX_PART_SNAPSHOT_REQ;
+  msgout.len=1;
+  ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PART_SNAPSHOT_MSG,&msgin);
+  if (!(ret == 1 && (msgin.msgnum == NX_PART_SNAPSHOT_MSG))) {
+    warn("Failed to get Partition status");
+    return -5;
+  }
+
+  for (i=0;i<NX_PARTITIONS_MAX;i++) {
+    if (msgin.msg[i] && 0x01) maxparts=i+1;
+  }
+
+
+
+  if (maxzones == 192)
+    model="NX-8E";
+  else if (maxzones == 48)
+    model="NX-8";
+  else if (maxzones == 16)
+    model="NX-6";
+  else if (maxzones == 8)
+    model="NX-4";
+
+
+  printf("Detected panel: %s (maxzones=%d, maxpartitions=%d)\n",model,maxzones,maxparts);
+
+  return 0;
+}
+
 /* eof :-) */

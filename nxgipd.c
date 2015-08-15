@@ -323,25 +323,14 @@ int main(int argc, char **argv)
     ret=nx_receive_message(fd,config->serial_protocol,&msgin,1);
   } while (ret==1);
 
-  /* request interface configuration */
-  msgout.msgnum=NX_INT_CONFIG_REQ;
-  msgout.len=1;
-  retry=0;
-  do {
-    ret=nx_send_message(fd,config->serial_protocol,&msgout,5,3,NX_INT_CONFIG_MSG,&msgin);
-    if (ret < 0) logmsg(0,"Failed to send message\n");
-    if (ret == 0) logmsg(0,"No response from NX device\n");
-  } while (ret != 1 && retry++ < 3);
-  if (ret == 1) {
-    if (msgin.msgnum != NX_INT_CONFIG_MSG) die("NX device refused the command\n");
-    if (scan_mode==2) {
-      nx_print_msg(stdout,&msgin);
-      exit(0);
-    }
-  } else {
-    die("failed to estabilish communications with NX device");
-  }
-  process_message(&msgin,1,0,astat,istatus);
+
+  /* try to detect panel model */
+  ret=detect_panel(fd,config->serial_protocol,astat,istatus,(scan_mode==2?1:0));
+  if (ret < 0) 
+    die("failed to estabilish communications with alarm panel: %d", ret);
+  if (scan_mode==2)
+    exit(0);
+
   printf("Firmware version v%s detected\n",istatus->version);
 
 

@@ -1121,7 +1121,7 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
     die("Partition Status Request command not enabled");
   }
   if ((istatus->sup_cmd_msgs[0] & 0x08) == 0) {
-    logmsg(0,"Zone Name Request command not enabled");
+    logmsg(0,"Zone Name Request command not enabled. Unable to get zone names.");
     skip_zone_names=1;
   }
   if ((istatus->sup_cmd_msgs[0] & 0x10) == 0) {
