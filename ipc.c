@@ -38,24 +38,11 @@
 int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_shm_t **shmptr)
 {
   int id;
-  void *seg;
-  
+  nx_shm_t *shm;
 
   /* initialize IPC shared memory segment */
 
   id = shmget(shmkey,size,(shmmode & 0x1ff)|IPC_CREAT|IPC_EXCL);
-#if 0
-  if (id < 0 && errno==EEXIST) {
-    logmsg(0,"Shared memory segment (key=%x) already exists",shmkey);
-    id = shmget(shmkey,1,0);
-    if (id >= 0) {
-      fprintf(stderr,"Trying to remove existing shared memory segment...\n");
-      shmctl(id,IPC_RMID,NULL);
-      id = shmget(shmkey,size,(shmmode & 0x1ff)|IPC_CREAT|IPC_EXCL);
-    }
-  }
-#endif
-
   if (id < 0) {
     if (errno==EEXIST) {
       logmsg(0,"Shared memory segment (key=%x) already exists",shmkey);
@@ -69,17 +56,18 @@ int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_s
   }
   *shmidptr=id;
 
-  seg = shmat(id,NULL,0);
-  if (seg == (void*)-1) { 
+  shm = shmat(id,NULL,0);
+  if (shm == (void*)-1) { 
     fprintf(stderr,"shmat() failed: %s (%d)\n",strerror(errno),errno);
     return -1;
   }
 
-  *shmptr=seg;
-  strlcpy((*shmptr)->shmversion,SHMVERSION,sizeof((*shmptr)->shmversion));
-  (*shmptr)->pid=getpid();
-  (*shmptr)->last_updated=0;
 
+  /* initialize shared memory segment */
+
+  memset(shm,0,size);
+  strlcpy(shm->shmversion,SHMVERSION,sizeof(shm->shmversion));
+  *shmptr=shm;
 
   return 0;
 }
