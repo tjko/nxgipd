@@ -47,8 +47,15 @@ void run_trigger_program(const char **envv)
   pid_t pid;
   int fd;
 
+
   logmsg(3,"run_trigger_program() called");
 
+  /* check if too many trigger processes is already running... */
+  if (config->max_triggers > 0 && trigger_processes >= config->max_triggers) {
+    logmsg(0,"trigger not started: too many trigger processes already running (%d)",
+	   trigger_processes);
+    return;
+  }
 
   /* filter out environment for the trigger program */
   e=(const char **)environ;
@@ -108,6 +115,7 @@ void run_trigger_program(const char **envv)
   }
   else {
     logmsg(3,"trigger (child) process created: pid=%u", pid);
+    trigger_processes++;
   }
 
 }

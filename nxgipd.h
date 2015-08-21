@@ -187,6 +187,7 @@ typedef struct nx_configuration {
   uchar trigger_log;
   uchar trigger_partition;
   uchar trigger_zone;
+  int   max_triggers;
   
   uint  shmkey;
   int   shmmode;
@@ -224,6 +225,7 @@ typedef struct nx_ipc_msg {
 
 extern nx_configuration_t *config;
 extern char *program_name;
+extern int trigger_processes;
 
 /* misc.c */
 void die(char *format, ...);

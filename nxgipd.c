@@ -60,21 +60,9 @@ nx_interface_status_t *istatus;
 nx_system_status_t *astat;
 nx_configuration_t configuration;
 nx_configuration_t *config = &configuration;
+int trigger_processes = 0;
 
 
-
-
-void crash_signal_handler(int sig)
-{
-  logmsg(0,"program crashed: signal=%d (%s)", sig, strsignal(sig));
-
-  if (shm != NULL) 
-    release_shared_memory(shmid,shm);
-  if (msgid >= 0) 
-    release_message_queue(msgid);
-
-  _exit(2); // avoid running any at_exit functions
-}
 
 
 void signal_handler(int sig)
@@ -82,20 +70,38 @@ void signal_handler(int sig)
   pid_t pid;
   int status;
 
-  if (sig != SIGCHLD) { 
-    logmsg(0,"program terminated: signal=%d (%s)", sig, strsignal(sig));
-    exit(1);
+
+  /* handle daemon "crash" ... */
+  if ( sig == SIGSEGV || sig == SIGBUS || sig == SIGFPE || sig == SIGILL ) {
+    logmsg(0,"program crashed: signal=%d (%s)", sig, strsignal(sig));
+    if (shm != NULL) 
+      release_shared_memory(shmid,shm);
+    if (msgid >= 0) 
+      release_message_queue(msgid);
+
+    _exit(2); // avoid running any at_exit functions
   }
 
-  /* reaper... */
+
+  /* abort on anything but SIGCHLD */
+  if (sig != SIGCHLD) { 
+    logmsg(0,"program terminated: signal=%d (%s)", sig, strsignal(sig));
+    exit(1); // we want at_exit functions to run...
+  }
+
+
+  /* reaper... read child process exit status */
+
   while ((pid=waitpid(-1,&status,WNOHANG)) > 0) {
     if (WIFEXITED(status)) {
       int estatus = WEXITSTATUS(status);
       logmsg( (estatus==0?3:1),"child process exited: pid=%u, status=%d", pid, estatus);
+      trigger_processes--;
     } 
     else if (WIFSIGNALED(status)) {
       logmsg(1,"child process terminated by signal: pid=%u, signal=%d (%s)",
 	     pid, WTERMSIG(status), strsignal(WTERMSIG(status)));
+      trigger_processes--;
     }
     else if (WIFSTOPPED(status)) {
       logmsg(1,"child process stopped: pid=%u, signal=%d (%s)", 
@@ -108,6 +114,7 @@ void signal_handler(int sig)
       logmsg(0,"something spooky happened to child process: pid=%u", pid);
     }
   }
+
 }
 
 
@@ -279,8 +286,6 @@ int main(int argc, char **argv)
   sigaction(SIGABRT,&sigact,NULL);
   sigaction(SIGPIPE,&sigact,NULL);
   sigaction(SIGCHLD,&sigact,NULL);
-
-  sigact.sa_handler=crash_signal_handler;
   sigaction(SIGSEGV,&sigact,NULL);
   sigaction(SIGBUS,&sigact,NULL);
   sigaction(SIGFPE,&sigact,NULL);

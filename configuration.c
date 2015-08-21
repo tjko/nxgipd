@@ -217,16 +217,21 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
   node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","logentry");
   if (!node) die("cannot find 'logentry' inside 'triggers' section in configuration");
   if (sscanf(node->value.text.string,"%d",&i)==1) config->trigger_log=i;
-  else die("invalid 'logentry' setting");
+  else die("invalid 'triggers::logentry' setting");
 
   node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","partitionstatus");
   if (!node) die("cannot find 'partitionstatus' inside 'triggers' section in configuration");
   if (sscanf(node->value.text.string,"%d",&i)==1) config->trigger_partition=i;
-  else die("invalid 'partitionstatus' setting");
+  else die("invalid 'triggers::partitionstatus' setting");
 
   node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","zonestatus");
   if (!node) die("cannot find 'zonestatus' inside 'triggers' section in configuration");
   if (sscanf(node->value.text.string,"%d",&i)==1) config->trigger_zone=i;
+  else die("invalid 'triggers::zonestatus' setting");
+
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","maxprocesses");
+  if (!node) die("cannot find 'maxprocesses' inside 'triggers' section in configuration");
+  if (sscanf(node->value.text.string,"%d",&i)==1) config->max_triggers=i;
   else die("invalid 'zonestatus' setting");
 
 
