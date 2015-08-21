@@ -191,8 +191,12 @@ typedef struct nx_configuration {
   
   uint  shmkey;
   int   shmmode;
+  int   shm_uid;
+  int   shm_gid;
   uint  msgkey;
   int   msgmode;
+  int   msg_uid;
+  int   msg_gid;
 } nx_configuration_t;
 
 

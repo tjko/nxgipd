@@ -25,6 +25,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
 #include <mxml.h>
 #include "nx-584.h"
 #include "nxgipd.h"
@@ -106,6 +109,9 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
   FILE *fp;
   char tmpstr[1024];
   const char *dir;
+  struct passwd *pw;
+  struct group *gr;
+
 
   if (!configfile || !config) return -1;
 
@@ -165,6 +171,30 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
   if (sscanf(node->value.text.string,"%o",&i)==1) config->shmmode=i;
   else die("invalid shm shmmode setting");
 
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","shmgroup");
+  if (node) {
+    if (sscanf(node->value.text.string,"%d",&i)==1) config->shm_gid=i;
+    else if ((gr=getgrnam(node->value.text.string))) {
+      config->shm_gid=gr->gr_gid;
+    } 
+    else die("invalid shm shmgroup setting");
+  } else {
+    config->shm_gid=-1;
+  }
+
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","shmuser");
+  if (node) {
+    if (sscanf(node->value.text.string,"%d",&i)==1) config->shm_uid=i;
+    else if ((pw=getpwnam(node->value.text.string))) {
+      config->shm_uid=pw->pw_uid;
+    } 
+    else die("invalid shm shmuser setting");
+  } else {
+    config->shm_uid=-1;
+  }
+
+
+
   node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msgkey");
   if (!node) die("cannot find msgkey in configuration");
   if (sscanf(node->value.text.string,"%x",&i)==1) config->msgkey=i;
@@ -173,8 +203,31 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
   node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msgmode");
   if (!node) die("cannot find msgmode in configuration");
   if (sscanf(node->value.text.string,"%o",&i)==1) config->msgmode=i;
-  else die("invalid msgmode setting");
+  else die("invalid shm msgmode setting");
 
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msggroup");
+  if (node) {
+    if (sscanf(node->value.text.string,"%d",&i)==1) config->msg_gid=i;
+    else if ((gr=getgrnam(node->value.text.string))) {
+      config->msg_gid=gr->gr_gid;
+    } 
+    else die("invalid shm msggroup setting");
+  } else {
+    config->msg_gid=-1;
+  }
+
+  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msguser");
+  if (node) {
+    if (sscanf(node->value.text.string,"%d",&i)==1) config->msg_uid=i;
+    else if ((pw=getpwnam(node->value.text.string))) {
+      config->msg_uid=pw->pw_uid;
+    } 
+    else die("invalid shm shmuser setting");
+  } else {
+    config->msg_uid=-1;
+  }
+
+    
 
   config->syslog_mode=0;
   node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","syslog");

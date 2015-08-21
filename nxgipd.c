@@ -99,7 +99,7 @@ void signal_handler(int sig)
       trigger_processes--;
     } 
     else if (WIFSIGNALED(status)) {
-      logmsg(1,"child process terminated by signal: pid=%u, signal=%d (%s)",
+      logmsg(1,"child process killed by signal: pid=%u, signal=%d (%s)",
 	     pid, WTERMSIG(status), strsignal(WTERMSIG(status)));
       trigger_processes--;
     }

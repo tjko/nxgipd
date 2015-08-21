@@ -37,8 +37,9 @@
 
 int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_shm_t **shmptr)
 {
-  int id;
+  int id, ret;
   nx_shm_t *shm;
+  struct shmid_ds shminfo;
 
   /* initialize IPC shared memory segment */
 
@@ -56,10 +57,33 @@ int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_s
   }
   *shmidptr=id;
 
+
+  /* get segment status */
+  ret = shmctl(id, IPC_STAT, &shminfo);
+  if (ret < 0) {
+    logmsg(0,"Failed to get shared memory segment status (id=%d): %s (%d)",
+	   id,strerror(errno),errno);
+    return -2;
+  }
+
+  /* update segment permissions */
+  if (config->shm_uid >= 0 || config->shm_gid >= 0) {
+    if (config->shm_uid >= 0)
+      shminfo.shm_perm.uid=config->shm_uid;
+    if (config->shm_gid >= 0)
+      shminfo.shm_perm.gid=config->shm_gid;;
+    ret = shmctl(id, IPC_SET, &shminfo);
+    if (ret < 0) {
+      logmsg(0,"Failed to update shared memory segment permissions: %s (%d)",
+	     strerror(errno),errno);
+      return -3;
+    }
+  }
+
   shm = shmat(id,NULL,0);
   if (shm == (void*)-1) { 
     fprintf(stderr,"shmat() failed: %s (%d)\n",strerror(errno),errno);
-    return -1;
+    return -4;
   }
 
 
@@ -76,15 +100,43 @@ int init_shared_memory(int shmkey, int shmmode, size_t size, int *shmidptr, nx_s
 
 int init_message_queue(int msgkey, int msgmode)
 {
+  int id, ret;
+  struct msqid_ds msginfo;
+
   /* initialize IPC message queue */
-  int id = msgget(msgkey,((msgmode&0777)|IPC_CREAT|IPC_EXCL));
+  id = msgget(msgkey,((msgmode&0777)|IPC_CREAT|IPC_EXCL));
   
   if (id < 0) {
     if (errno==EEXIST) {
-      logmsg(0,"Shared memory segment (key=%x) already exists",msgkey);
+      logmsg(0,"Message queue (key=%x) already exists",msgkey);
       logmsg(0,"Another instance already running?");
     } else {
       logmsg(0,"msgget() failed: %d (%s)\n", errno, strerror(errno));
+    }
+    return -1;
+  }
+
+
+  /* get message queue status */
+  ret = msgctl(id, IPC_STAT, &msginfo);
+  if (ret < 0) {
+    logmsg(0,"Failed to get message queue status: %d (%d)",
+	   strerror(errno),errno); 
+    return -2;
+  }
+
+
+  /* set message queue permissions */
+  if (config->msg_uid >= 0 || config->msg_gid >= 0) {
+    if (config->msg_uid >=0)
+      msginfo.msg_perm.uid = config->msg_uid;
+    if (config->msg_gid >=0)
+      msginfo.msg_perm.gid = config->msg_gid;
+    ret = msgctl(id, IPC_SET, &msginfo);
+    if (ret < 0) {
+      logmsg(0,"Failed to update message queue permissions: %s (%d)",
+	     strerror(errno),errno);
+      return -3;
     }
   }
 

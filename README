@@ -103,6 +103,8 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
         v1.1beta
+		- new config settings to set IPC memory segment and
+                  message queue user/group 
 		- new config setting 'maxprocesses' to prevent too many
 		  trigger scripts running simultaneously
 		- add --csv option to nxstat command
