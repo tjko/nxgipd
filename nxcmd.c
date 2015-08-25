@@ -416,7 +416,7 @@ int main(int argc, char **argv)
 #endif
 
   /* send IPC message */
-  i=msgsnd(msgid,&ipcmsg,sizeof(ipcmsg),0);
+  i=msgsnd(msgid,&ipcmsg,NX_IPC_MSG_DATA_LEN,0);
   /* clear message so no PIN left in memory */
   memset(&ipcmsg,0,sizeof(ipcmsg));
   if (i<0) {

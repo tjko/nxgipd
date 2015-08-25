@@ -177,7 +177,7 @@ int read_message_queue(int msgid, nx_ipc_msg_t *msg)
   if (msgid < 0 || !msg) return -1;
 
   /* read next message from the queue */
-  r = msgrcv(msgid,msg,sizeof(nx_ipc_msg_t),0,IPC_NOWAIT);
+  r = msgrcv(msgid,msg,NX_IPC_MSG_DATA_LEN,0,IPC_NOWAIT);
 
   if (r < 0) {
     if (errno==ENOMSG) {
@@ -192,7 +192,7 @@ int read_message_queue(int msgid, nx_ipc_msg_t *msg)
     return -2;
   }
 
-  if (r != sizeof(nx_ipc_msg_t)) {
+  if (r != NX_IPC_MSG_DATA_LEN) {
     logmsg(0,"received invalid size message: %ld (expected size %ld)",r,sizeof(nx_ipc_msg_t));
     return -3;
   }
