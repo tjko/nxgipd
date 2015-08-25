@@ -306,13 +306,13 @@ int main(int argc, char **argv)
   istatus=&shm->intstatus;
   astat=&shm->alarmstatus;
   if (verbose_mode) 
-    printf("IPC shm: key=0x%08x id=%d",config->shmkey,shmid);
+    printf("IPC shm: key=0x%08x id=%d\n",config->shmkey,shmid);
 
   /* initialize IPC message queue */
   if ((msgid=init_message_queue(config->msgkey,config->msgmode)) < 0) 
     die("Failed to initialize IPC message queue");
   if (verbose_mode)
-    printf("IPC msg: key=0x%08x id=%d",config->msgkey,msgid); 
+    printf("IPC msg: key=0x%08x id=%d\n",config->msgkey,msgid); 
 
 
 

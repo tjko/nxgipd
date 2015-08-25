@@ -204,12 +204,12 @@ int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_s
   retry=0;
   do {
     ret=nx_send_message(fd,config->serial_protocol,&msgout,5,3,NX_INT_CONFIG_MSG,&msgin);
-    if (ret < 0) warn("Failed to send message to panel\n");
-    if (ret == 0) warn("No response from panel\n");
+    if (ret < 0) warn("Failed to send message to panel");
+    if (ret == 0) warn("No response from panel");
   } while (ret != 1 && retry++ < 3);
   if (ret == 1) {
     if (msgin.msgnum != NX_INT_CONFIG_MSG) {
-      warn("Panel refused interface status command\n");
+      warn("Panel refused interface status command");
       return -1;
     }
     if (verbose) {
