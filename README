@@ -31,8 +31,9 @@ withouth requiring a third party monitoring provider.
 
 SUPPORTED ALARM PANEL MODELS
 
-	NX-8 
-	NX-8V2
+	NX-4 (V2)
+	NX-6 (V2)
+	NX-8 (V2)
 	NX-8E 
 
 	Other panels that use same "Networx NX-584 RS-232 Gateway
@@ -103,6 +104,10 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
         v1.1beta
+		- support for NX-4 and NX-6 added
+		- autodetection of panel features/model
+		- fix bug in IPC message sizing (nxcmd didn't work correctly
+		  on non x86_64 architectures))
 		- new config settings to set IPC memory segment and
                   message queue user/group 
 		- new config setting 'maxprocesses' to prevent too many
@@ -137,5 +142,5 @@ LATEST VERSION
 
 
 Timo <tjko@iki.fi>
-13-Aug-2015  $Id$
+27-Aug-2015  $Id$
 
