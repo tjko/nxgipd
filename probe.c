@@ -286,7 +286,9 @@ int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_s
       printf("no reply for zone %d (%d)\n",zonelist[i],msgin.msgnum);
     } else {
       //{int j; for (j=0;j<7;j++) { printf(" %02x",msgin.msg[j]); }; printf(" (%d)\n",maxzones); }
-      if ( (msgin.msg[1] & partmask) != 0 && maxzones==0) {
+      if ( maxzones == 0 
+	   && (msgin.msg[1] & partmask) != 0  
+	   && (msgin.msg[1] & ~partmask) == 0 ) {
 	maxzones=zonelist[i];
 	break;
       }
@@ -302,8 +304,6 @@ int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_s
       break;
     }
   }
-
-
 
 
   printf("Detected panel: %s (maxzones=%d, maxpartitions=%d)\n",model,maxzones,maxparts);
