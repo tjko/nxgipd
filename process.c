@@ -425,23 +425,23 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
       LOG_STATUS_CHANGE(astat->line_seizure,(msg->msg[1]&0x01 ? 1:0),change,"Line Seizure start","Line Seizure end");
       LOG_STATUS_CHANGE(astat->off_hook,(msg->msg[1]&0x02 ? 1:0),change,"Off Hook","On Hook");
-      LOG_STATUS_CHANGE(astat->handshake_rcvd,(msg->msg[1]&0x04 ? 1:0),change,"Initial Handshake Received",NULL);
+      LOG_STATUS_CHANGE(astat->handshake_rcvd,(msg->msg[1]&0x04 ? 1:0),change,"Initial Handshake Start","Initial Handshake End");
       LOG_STATUS_CHANGE(astat->download_in_progress,(msg->msg[1]&0x08 ? 1:0),change,"Download in progress","Download end");
       LOG_STATUS_CHANGE(astat->dialerdelay_in_progress,(msg->msg[1]&0x10 ? 1:0),change,"Dialer delay in progress","Dialer Delay end");
       LOG_STATUS_CHANGE(astat->backup_phone,(msg->msg[1]&0x20 ? 1:0),change,"Using backup phone","Using primary phone");
       LOG_STATUS_CHANGE(astat->listen_in,(msg->msg[1]&0x40 ? 1:0),change,"Listen in active","Listen in inactive");
-      LOG_STATUS_CHANGE(astat->twoway_lockout,(msg->msg[1]&0x80 ? 1:0),change,"Two way lockout",NULL);
+      LOG_STATUS_CHANGE(astat->twoway_lockout,(msg->msg[1]&0x80 ? 1:0),change,"Two way lockout start","Two way lockout end");
 
       LOG_STATUS_CHANGE(astat->ground_fault,(msg->msg[2]&0x01 ? 1:0),change,"Ground Fault","Ground OK");
       LOG_STATUS_CHANGE(astat->phone_fault,(msg->msg[2]&0x02 ? 1:0),change,"Phone Fault","Phone OK");
       LOG_STATUS_CHANGE(astat->fail_to_comm,(msg->msg[2]&0x04 ? 1:0),change,"Fail to communicate","Communications Restored");
       LOG_STATUS_CHANGE(astat->fuse_fault,(msg->msg[2]&0x08 ? 1:0),change,"Fuse Fault","Fuse OK");
-      LOG_STATUS_CHANGE(astat->box_tamper,(msg->msg[2]&0x10 ? 1:0),change,"Box Tamper",NULL);
-      LOG_STATUS_CHANGE(astat->siren_tamper,(msg->msg[2]&0x20 ? 1:0),change,"Siren Tamper",NULL);
+      LOG_STATUS_CHANGE(astat->box_tamper,(msg->msg[2]&0x10 ? 1:0),change,"Box Tamper Detected","Box Tamper Cleared");
+      LOG_STATUS_CHANGE(astat->siren_tamper,(msg->msg[2]&0x20 ? 1:0),change,"Siren Tamper Detected","Siren Tamper Cleared");
       LOG_STATUS_CHANGE(astat->low_battery,(msg->msg[2]&0x40 ? 1:0),change,"Low Battery","Battery OK");
       LOG_STATUS_CHANGE(astat->ac_fail,(msg->msg[2]&0x80 ? 1:0),change,"AC Fail","AC OK");
 
-      LOG_STATUS_CHANGE(astat->exp_tamper,(msg->msg[3]&0x01 ? 1:0),change,"Expander box tamper",NULL);
+      LOG_STATUS_CHANGE(astat->exp_tamper,(msg->msg[3]&0x01 ? 1:0),change,"Expander box Tamper Detected","Expander box Tamper Cleared");
       LOG_STATUS_CHANGE(astat->exp_ac_fail,(msg->msg[3]&0x02 ? 1:0),change,"Expander AC failure","Expander AC OK");
       LOG_STATUS_CHANGE(astat->exp_low_battery,(msg->msg[3]&0x04 ? 1:0),change,"Expander battery LOW","Expander battery OK");
       LOG_STATUS_CHANGE(astat->exp_loss_supervision,(msg->msg[3]&0x08 ? 1:0),change,"Expander loss of supervision","Expander supervision restored");
@@ -450,7 +450,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       LOG_STATUS_CHANGE(astat->exp_bell_fault,(msg->msg[3]&0x40 ? 1:0),change,"Expander bell fault","Expander bell OK");
       
       LOG_STATUS_CHANGE(astat->sixdigitpin,(msg->msg[4]&0x01 ? 1:0),change,"6 Digit PIN enabled","4 Digit PIN enabled");
-      LOG_STATUS_CHANGE(astat->prog_token_inuse,(msg->msg[4]&0x02 ? 1:0),change,"Programming token in use",NULL);
+      LOG_STATUS_CHANGE(astat->prog_token_inuse,(msg->msg[4]&0x02 ? 1:0),change,"GO TO PROGRAM code entered",NULL);
       LOG_STATUS_CHANGE(astat->pin_local_dl,(msg->msg[4]&0x04 ? 1:0),change,"PIN required for local download","PIN not required for local download");
       LOG_STATUS_CHANGE(astat->global_pulsing_buzzer,(msg->msg[4]&0x08 ? 1:0),change,"Global pulsing buzzer ON","Global pulsing buzzer OFF");
       LOG_STATUS_CHANGE(astat->global_siren,(msg->msg[4]&0x10 ? 1:0),change,"Global siren ON","Global siren OFF");
@@ -460,18 +460,18 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
       LOG_STATUS_CHANGE(astat->battery_test,(msg->msg[5]&0x01 ? 1:0),change,"Dynamic Battery Test start","Dynamic Battery Test end");
       LOG_STATUS_CHANGE(astat->ac_power,(msg->msg[5]&0x02 ? 1:0),change,"AC power ON","AC power OFF");
-      LOG_STATUS_CHANGE(astat->low_battery_memory,(msg->msg[5]&0x04 ? 1:0),change,"Low battery memory",NULL);
-      LOG_STATUS_CHANGE(astat->ground_fault_memory,(msg->msg[5]&0x08 ? 1:0),change,"Ground fault memory",NULL);
-      LOG_STATUS_CHANGE(astat->fire_alarm_verification,(msg->msg[5]&0x10 ? 1:0),change,"Fire alarm verification being timed",NULL);
+      LOG_STATUS_CHANGE(astat->low_battery_memory,(msg->msg[5]&0x04 ? 1:0),change,"Low battery memory","Low battery memory cleared");
+      LOG_STATUS_CHANGE(astat->ground_fault_memory,(msg->msg[5]&0x08 ? 1:0),change,"Ground fault memory","Ground fault memory cleared");
+      LOG_STATUS_CHANGE(astat->fire_alarm_verification,(msg->msg[5]&0x10 ? 1:0),change,"Fire Alarm verification timing start","Fire Alarm verification timing end");
       LOG_STATUS_CHANGE(astat->smoke_power_reset,(msg->msg[5]&0x20 ? 1:0),change,"Smoke detector power reset",NULL);
       LOG_STATUS_CHANGE(astat->line_power_50hz,(msg->msg[5]&0x40 ? 1:0),change,"50 Hz line power detected","60 Hz line power detected");
-      LOG_STATUS_CHANGE(astat->high_voltage_charge,(msg->msg[5]&0x80 ? 1:0),change,"Timing a high voltage battery charge",NULL);
+      LOG_STATUS_CHANGE(astat->high_voltage_charge,(msg->msg[5]&0x80 ? 1:0),change,"Timing a high voltage battery charge start","Timing a high voltage battery charge end");
       
       LOG_STATUS_CHANGE(astat->comm_since_autotest,(msg->msg[6]&0x01 ? 1:0),change,"Communication since last autotest","No Communication since last autotest");
       LOG_STATUS_CHANGE(astat->powerup_delay,(msg->msg[6]&0x02 ? 1:0),change,"Power up delay in progress","Power up delay end");
       LOG_STATUS_CHANGE(astat->walktest_mode,(msg->msg[6]&0x04 ? 1:0),change,"Walk test mode ON","Walk test mode OFF");
       LOG_STATUS_CHANGE(astat->system_time_loss,(msg->msg[6]&0x08 ? 1:0),change,"System time lost","System time restored");
-      LOG_STATUS_CHANGE(astat->enroll_request,(msg->msg[6]&0x10 ? 1:0),change,"Enroll request",NULL);
+      LOG_STATUS_CHANGE(astat->enroll_request,(msg->msg[6]&0x10 ? 1:0),change,"Enroll start","Enroll end");
       LOG_STATUS_CHANGE(astat->testfixture_mode,(msg->msg[6]&0x20 ? 1:0),change,"Test fixture mode ON","Test fixture mode OFF");
       LOG_STATUS_CHANGE(astat->controlshutdown_mode,(msg->msg[6]&0x40 ? 1:0),change,"Control shutdown mode ON","Control shutdown mode OFF");
       LOG_STATUS_CHANGE(astat->cancel_window,(msg->msg[6]&0x80 ? 1:0),change,"Timing cancel window start","Timing cancel window end");
