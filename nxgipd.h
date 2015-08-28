@@ -200,6 +200,13 @@ typedef struct nx_configuration {
 } nx_configuration_t;
 
 
+typedef struct nx_panel_model {
+  int id;
+  const char* name;
+  uchar max_zones;
+  uchar max_partitions;
+} nx_panel_model_t;
+
 
 typedef struct nx_shm {
   char                   shmversion[8];
