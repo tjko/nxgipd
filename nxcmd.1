@@ -126,6 +126,9 @@ getprogram <device> <location>
 Read program data (configuration) values from given device. Output is sent to nxgipd process log file (and/or to syslog depending on the configuration).  Device parameter specifies the device bus address (valid range for device is 0..255), and location parameter specifies with configuration item to read from the given device (valid range for location is 0.4095)
 Consult the alarm panel or accessory/device documentation for the device bus addresses and applicaple program location numbers.
 
+NOTE! Alarm panel itself is usually device number 8 (and not device 0 like when programming from a keypad).
+Also it is not possible to get the program data of the NX-584 itself (device 72).
+
 .TP 0.6i
 .B Commands (PIN required):
 

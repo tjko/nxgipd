@@ -63,13 +63,19 @@ Dump panel event log (into log) and exit.
 .TP 0.6i
 .B --probe
 Probe panel device bus for expansion modules.
-Note, NX-584E module cannot probe itself, but this 
+Note, NX-584E module cannot probe itself (72), but this 
 should find any other modules that support programming.
 .TP 0.6i
-.B --scan=<module>
-Dump full programing (configuration) of specified module and exit.
-.B --scan=<module>,<loc>
-Dump only give program location (configuration) of specified module and exit.
+.B --scan=<device>
+Dump full programing (configuration) of specified device and exit.
+Device is specified by it's bus address (0..255).
+
+NOTE! Alarm panel itself is usually 8 (and not 0 like when programming
+from a keypad) when queried using NX-584 interface.
+
+.TP 0.6i
+.B --scan=<device>,<loc>
+Dump only give program location (configuration) of specified device and exit.
 .TP 0.6i
 .B --status
 Display NX gateway status / settings. Can be used to indirectly see
