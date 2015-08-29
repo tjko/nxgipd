@@ -531,20 +531,21 @@ int main(int argc, char **argv)
   /* main status display */
 
   if (!csv_mode) {
-    printf("NX-8/NX-8V2/NX-8E Alarm Panel status\n\n");
+    printf("NetworX Alarm Panel status\n\n");
 
-    printf(" Active Partitions: %-12d     Firmware version: %s\n",apart,istatus->version);
-    printf("      Active Zones: %-12d             Panel ID: %d\n",azones,astat->panel_id);
-    printf("      Phone in-use: %-12s             AC Power: %s\n",
+    printf(" Active Partitions: %-12d NX-584 Firmware version: %s\n",apart,istatus->version);
+    printf("      Active Zones: %-12d        Panel ID (Model): %d (%s)\n",azones,
+	   astat->panel_id,astat->panel_model);
+    printf("      Phone in-use: %-12s                AC Power: %s\n",
 	   (astat->off_hook?"Panel":(astat->house_phone_offhook?"House-Phone":"NO")),
 	   (astat->ac_fail ? "FAIL" : (astat->ac_power?"OK":"OFF")));
-    printf("            Tamper: %-12s              Battery: %s\n",
+    printf("            Tamper: %-12s                 Battery: %s\n",
 	   (astat->box_tamper?"Panel":(astat->siren_tamper?"Siren":(astat->exp_tamper?"Expansion":"OK"))),
 	   (astat->low_battery?"LOW":"OK"));
-    printf("             Phone: %-12s                 Fuse: %s\n",
+    printf("             Phone: %-12s                    Fuse: %s\n",
 	   (astat->phone_fault?"Fault (Phone)":(astat->phone_line_fault?"Fault (Line)":"OK")),
 	   (astat->fuse_fault?"Fail":"OK"));
-    printf("    Communications: %-12s               Ground: %s\n",
+    printf("    Communications: %-12s                  Ground: %s\n",
 	   (astat->fail_to_comm?"FAIL":"OK"),
 	   (astat->ground_fault?"FAULT":"OK"));
     printf("\n");
