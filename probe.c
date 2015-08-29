@@ -276,14 +276,15 @@ int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_s
     return -6;
   }
 
-  for (i=0;i<4;i++) {
+  for (i=0; i < sizeof(zonelist); i++) {
     /* get zone status */
     msgout.msgnum=NX_ZONE_STATUS_REQ;
     msgout.len=2;
     msgout.msg[0]=zonelist[i]-1;
     ret=nx_send_message(fd,protocol,&msgout,5,3,NX_ZONE_STATUS_MSG,&msgin);
     if (ret != 1 || msgin.msgnum != NX_ZONE_STATUS_MSG) {
-      printf("no reply for zone %d (%d)\n",zonelist[i],msgin.msgnum);
+      if (verbose)
+	printf("no reply for zone %d (%d)\n",zonelist[i],msgin.msgnum);
     } else {
       //{int j; for (j=0;j<7;j++) { printf(" %02x",msgin.msg[j]); }; printf(" (%d)\n",maxzones); }
       if ( maxzones == 0 
@@ -301,12 +302,25 @@ int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_s
   for(i=0; nx_panel_models[i].id >= 0; i++) {
     if (nx_panel_models[i].id == panel_id) {
       model=nx_panel_models[i].name;
+      maxzones=nx_panel_models[i].max_zones;
+      maxparts=nx_panel_models[i].max_partitions;
       break;
     }
   }
 
+  if (maxparts == 0) 
+    maxparts=1;
+  if (maxzones == 0)
+    maxzones=8;
 
   printf("Detected panel: %s (maxzones=%d, maxpartitions=%d)\n",model,maxzones,maxparts);
+
+  if (config->partitions == 0)
+    config->partitions = maxparts;
+  if (config->zones <= 0)
+    config->zones = maxzones;
+
+  strlcpy(astat->panel_model,model,sizeof(astat->panel_model));
 
   return 0;
 }

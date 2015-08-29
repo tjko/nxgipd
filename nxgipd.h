@@ -18,7 +18,7 @@
 #define PRGNAME "nxgipd"
 
 /* shared memory version, update if shared memory locations change... */
-#define SHMVERSION "42.3"
+#define SHMVERSION "42.4"
 
 #ifndef CONFIG_FILE
 #define CONFIG_FILE "/etc/nxgipd.conf"
@@ -90,6 +90,7 @@ typedef struct nx_zone_status {
 
 typedef struct nx_system_status {
   uchar panel_id;
+  char panel_model[16];
   uchar comm_stack_ptr;
 
   char line_seizure;
