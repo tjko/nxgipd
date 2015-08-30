@@ -534,8 +534,8 @@ int main(int argc, char **argv)
     printf("NetworX Alarm Panel status\n\n");
 
     printf(" Active Partitions: %-12d NX-584 Firmware version: %s\n",apart,istatus->version);
-    printf("      Active Zones: %-12d        Panel ID (Model): %d (%s)\n",azones,
-	   astat->panel_id,astat->panel_model);
+    printf("      Active Zones: %-12d        Panel Model (ID): %s (%d)\n",azones,
+	   astat->panel_model,astat->panel_id);
     printf("      Phone in-use: %-12s                AC Power: %s\n",
 	   (astat->off_hook?"Panel":(astat->house_phone_offhook?"House-Phone":"NO")),
 	   (astat->ac_fail ? "FAIL" : (astat->ac_power?"OK":"OFF")));

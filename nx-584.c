@@ -33,6 +33,17 @@
 #include "nx-584.h"
 
 
+/* known panel models / IDs */
+
+const nx_panel_model_t nx_panel_models[] = {
+/* { panel-ID, model-name, max-zones, max-partitions } */
+   {  4, "NX-8E",   192, 8 },
+   { 10, "NX-4-V2",   8, 1 },
+   { 11, "NX-6-V2",  16, 2 },
+   { 12, "NX-8-V2",  48, 8 },
+   { -1, NULL }, 
+};
+
 const nx_log_event_type_t nx_log_event_types[] = {
   {   0, 'Z', 1, "Alarm" },
   {   1, 'Z', 1, "Alarm restore" },

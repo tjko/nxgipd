@@ -397,15 +397,28 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
   case NX_SYS_STATUS_MSG:
     {
       int change = 0;
+      const char *panel_model = NULL;
+      int i;
 
+      /* panel ID (model) */
       if (astat->panel_id != (uchar) msg->msg[0]) {
-	if (init_mode || astat->panel_id == 0)
-	  logmsg(0,"Panel ID: %d",msg->msg[0]);
+	logmsg(3,"Panel ID: %d",msg->msg[0]);
+	for(i=0; nx_panel_models[i].id >= 0; i++) {
+	  if (nx_panel_models[i].id == msg->msg[0]) {
+	    panel_model=nx_panel_models[i].name;
+	    break;
+	  }
+	}
+	if (panel_model)
+	  logmsg(0,"Panel Model: %s", panel_model);
 	else
-	  logmsg(0,"Panel ID change: %d -> %d",astat->panel_id,msg->msg[0]);
+	  logmsg(0,"Panel Model: Unknown (Panel ID=%d). Please report your alarm panel model and id to nxgipd developers.",
+		 msg->msg[0]);
 	astat->panel_id=msg->msg[0];
 	change++;
       }
+
+      /* panel communication stack (log) pointer */
       if (astat->comm_stack_ptr != (uchar) msg->msg[10]) {
 	logmsg(3,"panel communication stack pointer change: %d -> %d",astat->comm_stack_ptr,msg->msg[10]);
 	astat->comm_stack_ptr=msg->msg[10];

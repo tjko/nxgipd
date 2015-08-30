@@ -214,7 +214,16 @@ typedef struct nx_log_event {
 } nx_log_event_t;
 
 
+typedef struct nx_panel_model {
+  int id;
+  const char* name;
+  uchar max_zones;
+  uchar max_partitions;
+} nx_panel_model_t;
 
+
+
+extern const nx_panel_model_t nx_panel_models[];
 extern const nx_log_event_type_t nx_log_event_types[];
 
 
