@@ -84,8 +84,10 @@ int main(int argc, char **argv)
   int partition_info = -1;
   int system_status = 0;
   int csv_mode = 0;
+  int display_all = 0;
 
   struct option long_options[] = {
+    {"all",0,0,'a'},
     {"config",1,0,'c'},
     {"csv",0,0,'C'},
     {"help",0,0,'h'},
@@ -104,8 +106,12 @@ int main(int argc, char **argv)
 
   umask(022);
 
-  while ((opt=getopt_long(argc,argv,"ip:svVhCc:l::zZ",long_options,&opt_index)) != -1) {
+  while ((opt=getopt_long(argc,argv,"aip:svVhCc:l::zZ",long_options,&opt_index)) != -1) {
     switch (opt) {
+
+    case 'a':
+      display_all=1;
+      break;
       
     case 'c':
       config_file=strdup(optarg);
@@ -165,6 +171,7 @@ int main(int argc, char **argv)
     default:
       fprintf(stderr,"Usage: %s [OPTIONS]\n\n",program_name);
       fprintf(stderr,
+	      "  --all, -a               display all zones\n"
 	      "  --config=<configfile>   use specified config file\n"
 	      "  -c <configfile>\n"
 	      "  --csv, -C               output in CSV format\n"
@@ -451,7 +458,7 @@ int main(int argc, char **argv)
     //printf("flags: %02x %02x %02x\n",z->type_flags[0],z->type_flags[1],z->type_flags[2]);
     f=z->type_flags;
 
-    // NOTE! this information seems bogus...either NX-584 is returning bad data or bug somewhere...
+    // NOTE! this information seems bogus...either NX-584 (v1.06) is returning bad data or bug somewhere...
 
     PRINT_SUP_FLAG("Fire",f[0],0x01);
     PRINT_SUP_FLAG("24 Hour",f[0],0x02);
@@ -553,11 +560,11 @@ int main(int argc, char **argv)
     printf("Part  Ready Armed  Stay Instant Chime  Fire Delay Alarm Sound\n");
     printf("----  ----- -----  ---- ------- -----  ---- ----- ----- ---------\n");
   } else {
-    printf("system,active_partitions,fw_version,active_zones,panel_id,phone_in_use,ac_power," 
+    printf("system,active_partitions,fw_version,active_zones,panel_model,phone_in_use,ac_power," 
 	   "tamper,battery,phone,fuse,communications,ground\n");
-    printf("system,%d,%s,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s\n",
+    printf("system,%d,%s,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
 	   apart,istatus->version,
-	   azones,astat->panel_id,
+	   azones,astat->panel_model,
 	   (astat->off_hook?"Panel":(astat->house_phone_offhook?"House-Phone":"NO")),
 	   (astat->ac_fail ? "FAIL" : (astat->ac_power?"OK":"OFF")),
 	   (astat->box_tamper?"Panel":(astat->siren_tamper?"Siren":(astat->exp_tamper?"Expansion":"OK"))),
@@ -628,7 +635,7 @@ int main(int argc, char **argv)
   }
   else if (zones_mode==2) {
     nx_zone_status_t *zn;
-    char tmp[16],tmp2[16];
+    char tmp[16];
 
     if (csv_mode) {
       printf("\nzone,num,name,mode,status,last_fault\n");
@@ -647,11 +654,8 @@ int main(int argc, char **argv)
 	tmp[0]=0;
       }
 
-      snprintf(tmp2,sizeof(tmp2)-1,"Zone %2d",i+1);
-      tmp2[sizeof(tmp)-1]=0;
-      
-      if (strncmp(tmp2,zn->name,strlen(tmp2))!=0 || zn->last_updated > shm->daemon_started)
-	printf( (csv_mode ? "zone,%d,%s,%s,%s,%s,%s\n" : "%02d    %-16s  %-8s  %-6s  %s %s\n"),
+      if (display_all || zn->last_updated > 0)
+	printf((csv_mode ? "zone,%d,%s,%s,%s,%s,%s\n" : "%02d    %-16s  %-8s  %-6s  %s %s\n"),
 	       i+1,
 	       zn->name,
 	       (zn->bypass?"Bypassed":"Active"),
