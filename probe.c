@@ -196,9 +196,10 @@ int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_s
   uchar zonelist[4] = {192,48,16,8};
   int maxzones = 0;
   int maxparts = 0;
-  const char *model = "Unknown";
+  const char *model = NULL;
   uchar partmask = 0;
   uchar panel_id = 0;
+  char tmpstr[16];
 
   printf("Detecting panel model...\n");
 
@@ -300,6 +301,11 @@ int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_s
     maxparts=1;
   if (maxzones == 0)
     maxzones=8;
+  if (!model) {
+    snprintf(tmpstr,sizeof(tmpstr),"Unknown (%d)",panel_id);
+    model=tmpstr;
+  }
+  
 
   printf("Detected panel: %s (maxzones=%d, maxpartitions=%d)\n",model,maxzones,maxparts);
 

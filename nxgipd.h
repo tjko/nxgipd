@@ -90,7 +90,7 @@ typedef struct nx_zone_status {
 
 typedef struct nx_system_status {
   uchar panel_id;
-  char panel_model[16];
+  char  panel_model[16];
   uchar comm_stack_ptr;
 
   char line_seizure;
