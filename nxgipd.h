@@ -18,7 +18,7 @@
 #define PRGNAME "nxgipd"
 
 /* shared memory version, update if shared memory locations change... */
-#define SHMVERSION "42.4"
+#define SHMVERSION "42.5"
 
 #ifndef CONFIG_FILE
 #define CONFIG_FILE "/etc/nxgipd.conf"
@@ -202,6 +202,32 @@ typedef struct nx_configuration {
 
 
 
+
+#define NX_IPC_MSG_DATA_LEN   256
+
+typedef struct nx_ipc_msg {
+  long msgtype;
+  uint msgid[2];
+  uchar data[NX_IPC_MSG_DATA_LEN];  
+} nx_ipc_msg_t;
+
+typedef struct nx_ipc_msg_reply {
+  uint   msgid[2];
+  time_t timestamp;
+  int    result;
+  char   data[256];
+} nx_ipc_msg_reply_t;
+
+/* msgtype values for nx_ipc_msg_t */
+#define NX_IPC_MSG_CMD       1
+#define NX_IPC_MSG_GET_PROG  2
+#define NX_IPC_MSG_BYPASS    3
+#define NX_IPC_MSG_MESSAGE   4
+#define NX_IPC_X10_CMD       5
+
+
+#define IPC_MSG_REPLY_TABLE_SIZE 64
+
 typedef struct nx_shm {
   char                   shmversion[8];
   pid_t                  pid;
@@ -211,22 +237,12 @@ typedef struct nx_shm {
   nx_system_status_t     alarmstatus;  
   time_t                 daemon_started;
   char                   daemon_version[32];
+  int                    reply_index;
+  nx_ipc_msg_reply_t     replies[IPC_MSG_REPLY_TABLE_SIZE];
 } nx_shm_t;
 
 
-#define NX_IPC_MSG_DATA_LEN   256
-typedef struct nx_ipc_msg {
-  long msgtype;
-  uchar data[NX_IPC_MSG_DATA_LEN];  
-} nx_ipc_msg_t;
 
-
-/* msgtype values for nx_ipc_msg_t */
-#define NX_IPC_MSG_CMD       1
-#define NX_IPC_MSG_GET_PROG  2
-#define NX_IPC_MSG_BYPASS    3
-#define NX_IPC_MSG_MESSAGE   4
-#define NX_IPC_X10_CMD       5
 
 extern nx_configuration_t *config;
 extern char *program_name;
@@ -236,6 +252,7 @@ extern int trigger_processes;
 void die(char *format, ...);
 void warn(char *format, ...);
 void logmsg(int priority, char *format, ...);
+void set_message_reply(nx_ipc_msg_reply_t *reply, const nx_ipc_msg_t *msg, int result, const char *format, ...);
 int openserialdevice(const char *device, const char *speed);
 const char* timestampstr(time_t t);
 const char *timedeltastr(time_t delta);
@@ -261,11 +278,18 @@ int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_s
 
 /* process.c */
 void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_status_t *astat, nx_interface_status_t *istatus);
-void process_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
-void process_keypadmsg_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
-void process_get_program_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
-void process_zone_bypass_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
-void process_x10_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus);
+
+void process_command(int fd, int protocol, const nx_ipc_msg_t *msg,
+		     nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
+void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+			       nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
+void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
+void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
+void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+			 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
+
 void process_set_clock(int fd, int protocol, nx_system_status_t *astat);
 int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
 int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);

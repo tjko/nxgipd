@@ -49,6 +49,16 @@ will look for
 .B -h, --help
 Display short usage information and exit.
 .TP 0.6i
+.B -n, --nowait
+Do not wait for response from server for the command.
+.TP 0.6i
+.B -t <n>, --timeout=<n>
+Timeout (in seconds) for how long to wait response from the server.
+Default is 10 seconds.
+.TP 0.6i
+.B -p <n>, --partition=<n>
+Partition that the command should be applied to. Default is first partition (1).
+.TP 0.6i
 .B -v, --verbose
 Enable more verbose output to stdout (when not running as daemon).
 .TP 0.6i

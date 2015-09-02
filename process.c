@@ -54,6 +54,13 @@
 
 
 
+#define SET_MSG_REPLY(reply,msg,retval,loglevel, ...)			\
+  {									\
+    logmsg(loglevel,__VA_ARGS__);					\
+    set_message_reply(reply,msg,retval,__VA_ARGS__);			\
+  }
+
+
 void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_status_t *astat, nx_interface_status_t *istatus) 
 {
   unsigned char msgnum;
@@ -615,15 +622,17 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
 
 
-void process_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+void process_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+		     nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply)
 {
   nxmsg_t msgout,msgin;
   int func,ret,len,offset;
   char *funcname = NULL;
+  const uchar *data;
 
-  if (!data || !istatus) return;
+  if (!msg || !istatus || !reply) return;
 
-  //logmsg(0,"process_command: %02x,%02x,%02x",data[0],data[1],data[2]);
+  data=msg->data;
   func=(data[0]<<8 | data[1]);
 
   switch (func) {
@@ -672,7 +681,7 @@ void process_command(int fd, int protocol, const uchar *data, nx_interface_statu
   }
 
   if (!funcname) {
-    logmsg(0,"Invalid command message received: 0x%04x",func);
+    SET_MSG_REPLY(reply,msg,-1,0,"Invalid command message received: 0x%04x",func);
     return;
   }
 
@@ -680,15 +689,17 @@ void process_command(int fd, int protocol, const uchar *data, nx_interface_statu
   /* check if required commands are enabled on the interface */
   if (data[0] == NX_PRI_KEYPAD_FUNC_PIN) {
     if ((istatus->sup_cmd_msgs[3] & 0x10) == 0) {
-      logmsg(0,"Ignoring disabled command: Primary Keypad function with PIN command (0x3c)");
       logmsg(0,"Keypad function ignored (partitions=0x%02x): %s",data[2],funcname);
+      SET_MSG_REPLY(reply,msg,-1,0,
+		    "Ignoring disabled command: Primary Keypad function with PIN command (0x3c)");
       return;
     }
   } 
   else if (data[0] == NX_SEC_KEYPAD_FUNC) {
     if ((istatus->sup_cmd_msgs[3] & 0x40) == 0) {
-      logmsg(0,"Ignoring disabled command: Secondary Keypad Function with PIN (0x3e)");
       logmsg(0,"Keypad function ignored (partitions=0x%02x): %s",data[2],funcname);
+      SET_MSG_REPLY(reply,msg,-1,0,
+		    "Ignoring disabled command: Secondary Keypad Function with PIN (0x3e)");
       return;
     }
   } 
@@ -715,36 +726,44 @@ void process_command(int fd, int protocol, const uchar *data, nx_interface_statu
   ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
   memset(msgout.msg,0,5); // clear buffer so PIN won't be left in memory
   if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
-    logmsg(1,"Keypad function success (partitions=0x%02x): %s",data[2],funcname);
+    SET_MSG_REPLY(reply,msg,0,1,
+		  "Keypad function success (partitions=0x%02x): %s",data[2],funcname);
   } else if (ret == 1 && msgin.msgnum == NX_MSG_REJECTED) {
-    logmsg(0,"Keypad function rejected (partitions=0x%02x): %s",data[2],funcname);
+    SET_MSG_REPLY(reply,msg,1,0,
+		  "Keypad function rejected (partitions=0x%02x): %s",data[2],funcname);
   } else {
-    logmsg(0,"Keypad function failed (partitions=0x%02x,ret=%d,msg=0x%02x): %s",
-	   data[2],ret,msgin.msgnum,funcname);
+    SET_MSG_REPLY(reply,msg,2,0,
+		  "Keypad function failed (partitions=0x%02x,ret=%d,msg=0x%02x): %s",
+		  data[2],ret,msgin.msgnum,funcname);
   }
 
 }
 
 
 
-void process_keypadmsg_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+			       nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply)
 {
   nxmsg_t msgout,msgin;
   int ret,loc;
   int count=0;
+  const uchar *data;
 
-  if (!data || !istatus) return;
+  if (!msg || !istatus || !reply) return;
 
+  data=msg->data;
 
   if (data[2+16+16] != 0) {
     /* text string in the message should terminate to a null... */
-    logmsg(0,"process_keypad_message: invalid message ignored");
+    SET_MSG_REPLY(reply,msg,-1,0,
+		  "process_keypad_message: invalid message ignored");
     return;
   }
 
   if ((istatus->sup_cmd_msgs[1] & 0x08) == 0) {
-    logmsg(0,"Send Keypad Text Message not enabled. Message not sent: '%s'",
-	   (char*)&data[2]);
+    SET_MSG_REPLY(reply,msg,-1,0,
+		  "Send Keypad Text Message not enabled. Message not sent: '%s'",
+		  (char*)&data[2]);
     return;
   }
 
@@ -768,7 +787,7 @@ void process_keypadmsg_command(int fd, int protocol, const uchar *data, nx_inter
       logmsg(3,"Keypad text message success (keypad=%d loc=%d)",data[0],loc*8);
       count++;
     } else {
-      logmsg(0,"Keypad text message failed (keypad=%d). No such keypad?",data[0]);
+      SET_MSG_REPLY(reply,msg,1,0,"Keypad text message failed (keypad=%d). No such keypad?",data[0]);
       break;
     }
   }
@@ -780,7 +799,7 @@ void process_keypadmsg_command(int fd, int protocol, const uchar *data, nx_inter
     if (data[1] > 0) {
       /* set keypad to terminal mode to display the message */
       if ((istatus->sup_cmd_msgs[1] & 0x10) == 0) {
-	logmsg(0,"Keypad Terminal Mode Request not supported. Message not displayed.");
+	SET_MSG_REPLY(reply,msg,-1,0,"Keypad Terminal Mode Request not supported. Message not displayed.");
 	return;
       }
       
@@ -791,9 +810,9 @@ void process_keypadmsg_command(int fd, int protocol, const uchar *data, nx_inter
 
       ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
       if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
-	logmsg(1,"Keypad terminal mode enabled for %d seconds (keypad=%d)",data[1],data[0]);
+	SET_MSG_REPLY(reply,msg,0,1,"Keypad terminal mode enabled for %d seconds (keypad=%d)",data[1],data[0]);
       } else {
-	logmsg(0,"Keypad terminal mode failed (keypad=%d)",data[0]);
+	SET_MSG_REPLY(reply,msg,2,0,"Keypad terminal mode failed (keypad=%d)",data[0]);
       }
       
     }
@@ -910,20 +929,25 @@ int read_program_data(int fd, int protocol, int device, int location, int mode, 
 }
 
 
-void process_get_program_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, nx_interface_status_t *istatus,
+				 nx_ipc_msg_reply_t *reply)
 {
   int ret,loc;
   char *datastr = NULL;
   uchar datatype = 0;
   char *datatypestr = NULL;
+  const uchar* data;
 
-  if (!data || !istatus) return;
+  if (!msg || !istatus || !reply) return;
+
+  data=msg->data;
 
   loc = (data[1]&0xf)<<8 | data[2];
 
   if ((istatus->sup_cmd_msgs[2] & 0x01) == 0) {
-    logmsg(0,"Program Data Request not enabled. Message not sent (device=%d,loc=%d).",
-	   data[0],loc);
+    SET_MSG_REPLY(reply,msg,-1,0,
+		  "Program Data Request not enabled. Message not sent (device=%d,loc=%d).",
+		  data[0],loc);
     return;
   }
 
@@ -939,28 +963,33 @@ void process_get_program_command(int fd, int protocol, const uchar *data, nx_int
     case 3: datatypestr="Asc"; break;
     default: datatypestr="n/a";
     }
-    logmsg(1,"Program data (dev=%d,loc=%03d,len=%d,type=%s): %s",
-	   data[0],loc,ret,datatypestr,datastr);
 
+    SET_MSG_REPLY(reply,msg,0,1,
+		      "Program data (dev=%d,loc=%03d,len=%d,type=%s): %s",
+		      data[0],loc,ret,datatypestr,datastr);
     free(datastr);
   } else {
-    logmsg(0,"Program Data Request failed (device=%d,location=%d).",data[0],loc); 
+    SET_MSG_REPLY(reply,msg,1,0,
+		      "Program Data Request failed (device=%d,location=%d).",data[0],loc); 
   }
 
 }
 
 
-void process_zone_bypass_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply)
 {
   nxmsg_t msgout,msgin;
   int ret;
+  const uchar *data;
 
-  if (!data || !istatus) return;
+  if (!msg || !istatus || !reply) return;
 
+  data=msg->data;
 
   if ((istatus->sup_cmd_msgs[3] & 0x80) == 0) {
-    logmsg(0,"Zone Bypass Toggle not supported. Message not sent (Zone=%d).",
-	   data[0]+1);
+    SET_MSG_REPLY(reply,msg,-1,0,"Zone Bypass Toggle not supported. Message not sent (Zone=%d).",
+		  data[0]+1);
     return;
   }
 
@@ -973,29 +1002,31 @@ void process_zone_bypass_command(int fd, int protocol, const uchar *data, nx_int
 
   ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
   if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
-    logmsg(1,"Zone Bypass Toggle success: Zone=%d",data[0]+1);
+    SET_MSG_REPLY(reply,msg,0,1,"Zone Bypass Toggle success: Zone=%d",data[0]+1);
   } else {
-    logmsg(0,"Zone Bypass Toggle failure: Zone=%d",data[0]+1);
+    SET_MSG_REPLY(reply,msg,1,0,"Zone Bypass Toggle failure: Zone=%d",data[0]+1);
   }
-
 
 }
 
 
 
-void process_x10_command(int fd, int protocol, const uchar *data, nx_interface_status_t *istatus)
+void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+			 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply)
 {
   nxmsg_t msgout,msgin;
   int ret;
   uchar house;
   int unit;
+  const uchar *data;
 
-  if (!data || !istatus) return;
+  if (!msg || !istatus || !reply) return;
 
+  data=msg->data;
 
   if ((istatus->sup_cmd_msgs[1] & 0x02) == 0) {
-    logmsg(0,"Send X-10 Message not enabled. Message not sent (Zone=%d).",
-	   data[0]+1);
+    SET_MSG_REPLY(reply,msg,-1,0,"Send X-10 Message not enabled. Message not sent (Zone=%d).",
+		  data[0]+1);
     return;
   }
 
@@ -1014,9 +1045,9 @@ void process_x10_command(int fd, int protocol, const uchar *data, nx_interface_s
 
   ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
   if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
-    logmsg(1,"Send X-10 Message success: House=%c, Unit=%d, Function=%02x",house,unit,data[2]);
+    SET_MSG_REPLY(reply,msg,0,1,"Send X-10 Message success: House=%c, Unit=%d, Function=%02x",house,unit,data[2]);
   } else {
-    logmsg(0,"Send X-10 Message failure: House=%c, Unit=%d, Function=%02x",house,unit,data[2]);
+    SET_MSG_REPLY(reply,msg,1,0,"Send X-10 Message failure: House=%c, Unit=%d, Function=%02x",house,unit,data[2]);
   }
 
 }

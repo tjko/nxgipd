@@ -134,6 +134,24 @@ void logmsg(int priority, char *format, ...)
 }
 
 
+void set_message_reply(nx_ipc_msg_reply_t *reply, const nx_ipc_msg_t *msg, int result, const char *format, ...)
+{
+  va_list args;
+  char buf[256];
+  
+  va_start(args,format);
+  vsnprintf(buf,sizeof(buf),format,args);
+  va_end(args);
+
+  reply->msgid[0]=msg->msgid[0];
+  reply->msgid[1]=msg->msgid[1];
+  reply->timestamp=time(NULL);
+  reply->result=result;
+  strlcpy(reply->data,buf,sizeof(reply->data));
+}
+
+
+
 
 int openserialdevice(const char *device, const char *speed)
 {

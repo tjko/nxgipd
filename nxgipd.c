@@ -336,7 +336,7 @@ int main(int argc, char **argv)
   if (scan_mode==2)
     exit(0);
 
-  printf("Firmware version v%s detected\n",istatus->version);
+  printf("Interface Firmware version v%s detected\n",istatus->version);
 
 
   if (scan_mode > 0) {
@@ -468,27 +468,33 @@ int main(int argc, char **argv)
 
       /* check for messages in message queue */
       if ((ret=read_message_queue(msgid,&ipcmsg)) > 0) {
-	logmsg(3,"got IPC message: %d (%02x,%02x,%02x,...) = %d",
-	       ipcmsg.msgtype,ipcmsg.data[0],ipcmsg.data[1],ipcmsg.data[2],ret);
+	nx_ipc_msg_reply_t *reply = &shm->replies[shm->reply_index++];
+
+	if (shm->reply_index >= IPC_MSG_REPLY_TABLE_SIZE)
+	  shm->reply_index=0;
+
+	logmsg(3,"got IPC message: msgtype=%d msgid=%d,%d (%02x,%02x,%02x,...) = %d",
+	       ipcmsg.msgtype,ipcmsg.msgid[0],ipcmsg.msgid[1],ipcmsg.data[0],ipcmsg.data[1],ipcmsg.data[2],ret);
 	
 	switch (ipcmsg.msgtype) {
 	case NX_IPC_MSG_CMD:
-	  process_command(fd,config->serial_protocol,ipcmsg.data,istatus);
+	  process_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
 	  break;
 	case NX_IPC_MSG_BYPASS:
-	  process_zone_bypass_command(fd,config->serial_protocol,ipcmsg.data,istatus);
+	  process_zone_bypass_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
 	  break;
 	case NX_IPC_MSG_GET_PROG:
-	  process_get_program_command(fd,config->serial_protocol,ipcmsg.data,istatus);
+	  process_get_program_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
 	  break;
 	case NX_IPC_MSG_MESSAGE:
-	  process_keypadmsg_command(fd,config->serial_protocol,ipcmsg.data,istatus);
+	  process_keypadmsg_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
 	  break;
 	case NX_IPC_X10_CMD:
-	  process_x10_command(fd,config->serial_protocol,ipcmsg.data,istatus);
+	  process_x10_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
 	  break;
 	default:
 	  logmsg(0,"unknown IPC message received: %d",ipcmsg.msgtype);
+	  set_message_reply(reply,&ipcmsg,-1,"unknown IPC message received: %d",ipcmsg.msgtype);
 	}
 	
 	memset(ipcmsg.data,0,sizeof(ipcmsg.data)); // clear message data so PIN won't be left in memory

@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <sys/shm.h>
 #include <time.h>
 #include <string.h>
 #include <ctype.h>
@@ -50,6 +51,8 @@ int verbose_mode = 0;
 int msgid = -1;
 nx_configuration_t configuration;
 nx_configuration_t *config = &configuration;
+nx_shm_t *shm = NULL;
+int shmid = -1;
 
 
 /* Based on old GNU getpass() implementation
@@ -112,18 +115,18 @@ void print_usage()
   fprintf(stderr,"Usage: %s [OPTIONS] <command>\n\n",program_name);
   fprintf(stderr,
 	  " Commands (no PIN required):\n"
-	  "  exit                               Exit (one button arm / toggle instant)\n"
-	  "  stay                               Stay (one button arm / toggle interiors)\n"
-	  "  chime                              Toggle chime mode\n"
-	  "  bypass                             Bypass interiors\n"
-	  "  grpbypass                          Group bypass\n"
-	  "  smokereset                         Smoke detector reset\n"
-	  "  sounder                            Start keypad sounder\n\n"
-	  "  zonebypass <n>                     Toggle zone bypass status\n"
-	  "  x10 <house> <unit> <func>          Send X-10 Message/Command\n"
-	  "  message <n> <line1> <line2> <sec>  Display text message on keypad\n"
-	  "  getprogram <dev> <loc>             Display program data from device\n\n"
-	  " Commands (PIN required):\n"
+	  "  exit                                Exit (one button arm / toggle instant)\n"
+	  "  stay                                Stay (one button arm / toggle interiors)\n"
+	  "  chime                               Toggle chime mode\n"
+	  "  bypass                              Bypass interiors\n"
+	  "  grpbypass                           Group bypass\n"
+	  "  smokereset                          Smoke detector reset\n"
+	  "  sounder                             Start keypad sounder\n\n"
+	  "  zonebypass <n>                      Toggle zone bypass status\n"
+	  "  x10 <house> <unit> <func>           Send X-10 Message/Command\n"
+	  "  message <n> <line1> <line2> <sec>   Display text message on keypad\n"
+	  "  getprogram <dev> <loc>              Display program data from device\n"
+	  "\n Commands (PIN required):\n"
 	  "  armaway                            Arm in Away mode\n"
 	  "  armstay                            Arm in Stay mode\n"
  	  "  disarm                             Disarm partition\n"
@@ -135,6 +138,8 @@ void print_usage()
 	  "  -c <configfile>\n"
 	  "  --partition=<n>, -p <n>            partition for the command (default 1)\n"
 	  "  --help, -h                         display this help and exit\n"
+	  "  --nowait, -n                       do not wait for response from server\n"
+	  "  --timeout=<n>, -t <n>              timeout for waiting response from server (default 10)\n"
 	  "  --verbose, -v                      enable verbose output to stdout\n"
 	  "  --version, -V                      print program version\n"
 	  "\n");
@@ -161,12 +166,15 @@ int main(int argc, char **argv)
   int x10house = 0;
   int x10unit = 0;
   int x10func = 0;
+  int nowait = 0;
+  int timeout = 10;
   char text1[MESSAGE_LINE_LEN+1];
   char text2[MESSAGE_LINE_LEN+1];
   nx_ipc_msg_t  ipcmsg;
   const char* cmd = NULL;
   char *pin = NULL;
   size_t pinsize = 0;
+  time_t tm;
 
   struct option long_options[] = {
     {"config",1,0,'c'},
@@ -174,17 +182,23 @@ int main(int argc, char **argv)
     {"partition",1,0,'p'},
     {"verbose",0,0,'v'},
     {"version",0,0,'V'},
+    {"nowait",0,0,'n'},
+    {"timeout",1,0,'t'},
     {NULL,0,0,0}
   };
   program_name="nxcmd";
 
 
 
-  while ((opt=getopt_long(argc,argv,"vVhc:p:",long_options,&opt_index)) != -1) {
+  while ((opt=getopt_long(argc,argv,"t:nvVhc:p:",long_options,&opt_index)) != -1) {
     switch (opt) {
       
     case 'c':
       config_file=strdup(optarg);
+      break;
+
+    case 'n':
+      nowait=1;
       break;
 
     case 'p':
@@ -198,6 +212,19 @@ int main(int argc, char **argv)
 	}
       } else {
 	fprintf(stderr,"invalid partition specified (valid values: 1..8)\n");
+	exit(1);
+      }
+      break;
+
+    case 't':
+      if (sscanf(optarg,"%d",&i)==1) {
+	if (i < 0) {
+	  fprintf(stderr,"invalid timeout value\n");
+	  exit(1);
+	}
+	timeout=i;
+      } else {
+	fprintf(stderr,"invalid timeout value\n");
 	exit(1);
       }
       break;
@@ -252,6 +279,23 @@ int main(int argc, char **argv)
       die("msgget() failed: %d (errno=%d)",strerror(errno),errno);
     }
   }
+
+
+  /* initialize shared memory segment */
+
+  shmid = shmget(config->shmkey,sizeof(nx_shm_t),0);
+  if (shmid < 0) {
+    if (errno==EINVAL) 
+      die("nxstat version mismatch with daemon version (shared memory segment wrong size)");
+    if (errno==ENOENT)
+      die("cannot find share memory segment (server not running?)");
+    die("shmget() failed: %s (%d)\n",strerror(errno),errno);
+  }
+  shm = shmat(shmid,NULL,SHM_RDONLY);
+  if (shm == (void*)-1)  
+    die("shmat() failed: %d (%s)\n",errno,strerror(errno));
+
+
 
   if (verbose_mode) {
     printf("IPC msg: key=0x%08x id=%d\n",config->msgkey,msgid);
@@ -409,6 +453,9 @@ int main(int argc, char **argv)
   }
 
 
+  ipcmsg.msgid[0]=time(NULL);
+  ipcmsg.msgid[1]=getpid();
+
 #if DEBUG
   printf("msgtype: %d data: ",ipcmsg.msgtype);
   for(i=0;i<36;i++) { printf("%02x ",ipcmsg.data[i]); }
@@ -416,16 +463,39 @@ int main(int argc, char **argv)
 #endif
 
   /* send IPC message */
-  i=msgsnd(msgid,&ipcmsg,NX_IPC_MSG_DATA_LEN,0);
-  /* clear message so no PIN left in memory */
-  memset(&ipcmsg,0,sizeof(ipcmsg));
+  i=msgsnd(msgid,&ipcmsg,sizeof(ipcmsg)-sizeof(long),0);
+  /* clear message data so no PIN left in memory */
+  memset(ipcmsg.data,0,sizeof(ipcmsg.data));
   if (i<0) {
     die("error sending message to server process: %s (errno=%d)\n",
 	strerror(errno),errno);
   } else {
-    printf("message sent successfully\n");
+    if (verbose_mode)
+      printf("Message sent successfully\n");
   }
 
+  if (nowait)
+    return 0;
+
+  if (verbose_mode) 
+    printf("Waiting for reply...\n");
+
+  tm=time(NULL) + timeout;
+  while (time(NULL) <= tm) {
+    for(i=0;i<IPC_MSG_REPLY_TABLE_SIZE;i++) {
+      nx_ipc_msg_reply_t *r = &shm->replies[i];
+
+      if (r->msgid[0] == ipcmsg.msgid[0] &&
+	  r->msgid[1] == ipcmsg.msgid[1]) {
+	//printf("reply[%d]: %d,%d result=%d: %s\n",i,r->msgid[0],r->msgid[1],r->result,r->data);
+	printf("%s\n",r->data);
+	exit(r->result);
+      }
+    }
+    usleep(100000);
+  }
+
+  die("timeout waiting response from server");
   return 0;
 }
 
