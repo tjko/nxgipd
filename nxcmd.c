@@ -109,6 +109,90 @@ int getpassword(const char *prompt, char **lineptr, size_t *n, FILE *stream)
 }
 
 
+void parse_program_data(int datatype, char *progdata, int *datalen, int argc, char **argv)
+{
+  int i,j,val;
+  int len = 0;
+
+
+  if (argc > 32)
+    die("too many arguments to setprogram");
+
+  if (datatype == 3 && argc > 1)
+    die("ASCII format data should be in one block");
+
+  memset(progdata,0,32);
+
+  switch (datatype) {
+
+  case 0: // binary
+    {
+      if (argc > 16)
+	die("too many binary arguments to setprogram");
+      for(i=0; i<argc; i++) {
+	val=0;
+	for(j=0; j<strlen(argv[i]); j++) {
+	  if (isdigit(argv[i][j])) {
+	    int tmp = argv[i][j] - '0';
+	    if (tmp > 8) die("invalid bit defined '%s'",argv[i]);
+	    if (tmp > 0) {
+	      //printf("%d\n",tmp);
+	      val |= (1 << (tmp-1));
+	    }
+	  }
+	}
+	//printf("val:%x\n",val);
+	progdata[i]=val;
+	len++;
+      }
+    }
+    break;
+
+  case 1: // decimal
+    {
+      for(i=0;i<argc;i++) {
+	if (sscanf(argv[i],"%d",&val) != 1)
+	  die("invalid decimal data value '%s'",argv[i]);
+	if (val > 255)
+	  die("too large decimal value '%s'",argv[i]);
+	progdata[i]=val;
+	len++;
+      }
+    }
+    break;
+
+  case 2: // hexadecimal
+    {
+      for(i=0;i<argc;i++) {
+	if (sscanf(argv[i],"%x",&val) != 1)
+	  die("invalid hexadecimal data value '%s'",argv[i]);
+	if (val > 0xff) 
+	  die("too large hexadecimal value '%s'",argv[i]);
+	progdata[i]=val;
+	len++;
+      }
+    }
+    break;
+
+  case 3: // ascii
+    {
+      len=strlen(argv[0]);
+      if (len > 16)
+	die("too long ascii string: '%s'",argv[0]);
+      for(i=0; i<len; i++) {
+	progdata[i]=argv[0][i];
+      }
+    }
+    break;
+
+  default:
+    die("internal error: parse_program_data failed");
+  }
+
+  // for(i=0; i <argc; i++) printf("argv[%d]='%s'\n",i,argv[i]);
+
+  *datalen=len;
+}
 
 void print_usage()
 {
@@ -126,6 +210,8 @@ void print_usage()
 	  "  x10 <house> <unit> <func>           Send X-10 Message/Command\n"
 	  "  message <n> <line1> <line2> <sec>   Display text message on keypad\n"
 	  "  getprogram <dev> <loc>              Display program data from device\n"
+	  "  setprogram <dev> <loc> <type> -- <data1> ... <dataN>\n"
+	  "                                      Program a device location\n"
 	  "\n Commands (PIN required):\n"
 	  "  armaway                            Arm in Away mode\n"
 	  "  armstay                            Arm in Stay mode\n"
@@ -161,6 +247,7 @@ int main(int argc, char **argv)
   int zone = -1;
   int device = -1;
   int location = -1;
+  int datatype = -1;
   int keypad = -1;
   int msgtime = -1;
   int x10house = 0;
@@ -170,6 +257,8 @@ int main(int argc, char **argv)
   int timeout = 10;
   char text1[MESSAGE_LINE_LEN+1];
   char text2[MESSAGE_LINE_LEN+1];
+  char progdata[32];
+  int datalen = -1;
   nx_ipc_msg_t  ipcmsg;
   const char* cmd = NULL;
   char *pin = NULL;
@@ -333,7 +422,25 @@ int main(int argc, char **argv)
     }
     if (device < 0 || device > NX_BUS_ADDRESS_MAX || 
 	location < 0 || location > NX_LOGICAL_LOCATION_MAX) 
-      die("getprogram option require device and location arguments");
+      die("getprogram option requires device and location arguments");
+  }
+  else if (!strcasecmp(cmd,"setprogram")) {
+    msgtype=NX_IPC_MSG_SET_PROG;
+    if (args < 5) 
+      die("missing arguments for setprogram option");
+    sscanf(argv[optind+1],"%d",&device);
+    if (device < 0 || device > NX_BUS_ADDRESS_MAX) 
+      die("invalid device specified");
+    sscanf(argv[optind+2],"%d",&location);
+    if (location <0 || location > NX_LOGICAL_LOCATION_MAX) 
+      die("invalid location specified");
+    if (!strncasecmp("binary",argv[optind+3],strlen(argv[optind+3]))) datatype=0;
+    else if (!strncasecmp("decimal",argv[optind+3],strlen(argv[optind+3]))) datatype=1;
+    else if (!strncasecmp("hexadecimal",argv[optind+3],strlen(argv[optind+3]))) datatype=2;
+    else if (!strncasecmp("ascii",argv[optind+3],strlen(argv[optind+3]))) datatype=3;
+    if (datatype < 0)
+      die("invalid data type specified");
+    parse_program_data(datatype,progdata,&datalen,argc-(optind+4),argv+(optind+4));
   }
   else if (!strcasecmp(cmd,"message")) {
     int i;
@@ -433,6 +540,20 @@ int main(int argc, char **argv)
       ipcmsg.data[0]=device;
       ipcmsg.data[1]=(location >> 8) & 0x0f;
       ipcmsg.data[2]=location & 0xff;
+      break;
+    case NX_IPC_MSG_SET_PROG:
+      ipcmsg.data[0]=device;
+      ipcmsg.data[1]=(location >> 8) & 0x0f;
+      ipcmsg.data[2]=location & 0xff;
+      ipcmsg.data[3]=datatype;
+      ipcmsg.data[4]=datalen;
+      for (i=0; i<datalen; i++)
+	ipcmsg.data[5+i]=progdata[i];
+      if (datatype==3) {
+	// pad ASCII data with spaces...
+	for(i=datalen; i<32; i++)
+	  ipcmsg.data[5+i]=' ';
+      }
       break;
     case NX_IPC_MSG_MESSAGE:
       //printf("keypad=%d,text1='%s',text2='%s'\n",keypad,text1,text2);

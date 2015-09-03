@@ -486,6 +486,9 @@ int main(int argc, char **argv)
 	case NX_IPC_MSG_GET_PROG:
 	  process_get_program_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
 	  break;
+	case NX_IPC_MSG_SET_PROG:
+	  process_set_program_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
+	  break;
 	case NX_IPC_MSG_MESSAGE:
 	  process_keypadmsg_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
 	  break;

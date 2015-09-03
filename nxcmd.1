@@ -76,41 +76,41 @@ there may be mandatory parameters required.
 .B Commands (no PIN required):
 
 .TP 0.6i
-exit
+.B exit
 Same as pressing "Exit" button on the keypad. If one button arm is enabled this will arm the system in away mode. If system is already armed this will toggle "Instat" mode (if it is enabled by alarm configuration).
 
 .TP 0.6i
-stay
+.B stay
 Same as pressing "Stay" button on the keypad. If one button arm is enabled this will arm the system in stay mode. If system is already armed this will toggle "Interiors" (if it is enabled by alarm configuration).
 
 .TP 0.6i
-chime
+.B chime
 Same as pressing "Chime" button on the keypad. This will toggle the chime mode.
 
 .TP 0.6i
-bypass
+.B bypass
 Toggle bypass status of "interior" sonze.
 
 .TP 0.6i
-grpbypass
+.B grpbypass
 Group bypass.
 
 .TP 0.6i
-smokereset
+.B smokereset
 Smoke detector manual reset.
 
 .TP 0.6i
-sounder
+.B sounder
 Enabled (turn on) keypad sounder.
 
 .PP
 
 .TP 0.6i 
-zonebypass <zone number>
+.B zonebypass <zone number>
 Togle bypass of given zone. Zone numbers are 1..192 range.
 
 .TP 0.6i
-x10 <house> <unit> <function>
+.B x10 <house> <unit> <function>
 Send X-10 Command. House parameter is a letter from A to P.
 Unit parameter is number from 1 to 16. 
 And function is one of the following: 
@@ -118,7 +118,7 @@ And function is one of the following:
 on, off, dim, bright, lights-on, lights-off, units-off
 
 .TP 0.6i
-message <n> <line1> <line2> <sec>
+.B message <n> <line1> <line2> <sec>
 Display custom message on designated pinpad for short amount of time. Parameter
 .I n
 specifies the pinpad (1=first pinpad). Parameters
@@ -132,44 +132,107 @@ Final argument
 specifies how many seconds the message should be displayed (valid range 0-255).
 
 .TP 0.6i
-getprogram <device> <location>
-Read program data (configuration) values from given device. Output is sent to nxgipd process log file (and/or to syslog depending on the configuration).  Device parameter specifies the device bus address (valid range for device is 0..255), and location parameter specifies with configuration item to read from the given device (valid range for location is 0.4095)
+.B getprogram <device> <location>
+Read program data (configuration) values from given device. Output is also sent
+to nxgipd process log file (and/or to syslog depending on the configuration).
+
+Arguments for this command are as follows:
+.RS
+
+.IP device
+Specifies the bus address of device to be programed.
+Valid range of device addresses is: 0..255
+
+.IP location
+Specifies the location to program on the device.
+Valur range of program locations is: 0..4095
+
+.RE
+.RS
 Consult the alarm panel or accessory/device documentation for the device bus addresses and applicaple program location numbers.
 
 NOTE! Alarm panel itself is usually device number 8 (and not device 0 like when programming from a keypad).
 Also it is not possible to get the program data of the NX-584 itself (device 72).
+.RE
+
+.TP 0.6i
+.B setprogram <device> <location> <datatype> [--] <data1> ... <dataN>
+Write program data (configuration) values to given device. This allows programming of the alarm panel and/or 
+any add-on modules in the systesm. 
+
+Typically you want first read given location using the
+.B getprogram
+command and then use ouput from that command to determine the
+datatype and number of segments (and current program data values) to generate programming request.
+
+
+Arguments for this command are as follows:
+.RS
+
+.IP device
+Specifies the bus address of device to be programed.
+Valid range of device addresses is: 0..255
+
+.IP location
+Specifies the location to program on the device.
+Valur range of program locations is: 0..4095
+
+.IP datatype
+parameter may be set to one of the following values (these can be shortened):
+
+ binary
+
+ decimal
+
+ hexadecimal
+
+ ascii
+
+.IP data
+Depending on the location used there is 1 or more (up to 32) segments (values) to program on that location. These should be separated by spaces, except when
+using 
+.B ascii
+datatype when there should be just one parameter containing the string to program into that location.
+
+
+.RE
+
+.RS
+NOTE! Alarm panel itself is usually device number 8 (and not device 0 like when programming from a keypad).
+Also it is not possible to program the NX-584 itself (device 72).
+.RE
 
 .TP 0.6i
 .B Commands (PIN required):
 
 .TP 0.6i
-armaway
+.B armaway
 Arm in Away mode. By default this affects partition 1, alternate target partition may be specified using the  
 .I --partition, -p
 option.
 
 .TP 0.6i
-armstay
+.B armstay
 Arm in Stay mode. By default this affects partition 1, alternate target partition may be specified using the  
 .I --partition, -p
 option.
 
 .TP 0.6i
-disarm
+.B disarm
 Disarm partition. This will disarm partition 1 unless otherwise specified using the
 .I --partition, -p
 option.
 
 .TP 0.6i
-silence
+.B silence
 Turn off any sounder or alarm. This will turn of the main siren as well as keyboard sounder(s).
 
 .TP 0.6i
-cancel
+.B cancel
 Cancel Alarm. This will send alarm cancellation message.
 
 .TP 0.6i
-autoarm
+.B autoarm
 Initiate auto-arm process.
 
 
@@ -178,22 +241,18 @@ Initiate auto-arm process.
 Some of the commands offered by nxcmd could potentially make your alarm system slightly less secure, while offering convenience of being able to remotely control the system. NX-584 interface configuration determines which (if any) of these commands will be available.
 
 Relevant commands to enable (in NX-584 configuration) for full functionaliy are the following:
-
-
-.TP 0.6i
+.IP \[bu] 2
 Secondary Keypad Function (3Eh)
-
-.TP 0.6i
+.IP \[bu]
 Primary Keypad Function with PIN (3Ch)
-
-.TP 0.6i
+.IP \[bu]
 Send X-10 Message (28h)
-
-.TP 0.6i
+.IP \[bu]
 Send Keypad Text Message (2Bh) & Keypad Terminal Mode Request (2Ch)
-
-.TP 0.6i
+.IP \[bu]
 Program Data Request (30h)
+.IP \[bu]
+Program Data Command (31h)
 
 
 

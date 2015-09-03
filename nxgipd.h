@@ -224,7 +224,7 @@ typedef struct nx_ipc_msg_reply {
 #define NX_IPC_MSG_BYPASS    3
 #define NX_IPC_MSG_MESSAGE   4
 #define NX_IPC_X10_CMD       5
-
+#define NX_IPC_MSG_SET_PROG  6
 
 #define IPC_MSG_REPLY_TABLE_SIZE 64
 
@@ -284,6 +284,8 @@ void process_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 			       nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
 void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
+void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
 void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);

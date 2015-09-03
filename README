@@ -1,8 +1,8 @@
 nxgipd v1.1beta
 ===============
 
-nxgipd is a monitoring daemon for Gaddx/GE Security/UTC Interlogix alarm systems
-that use the Networx NX-584 protocol.
+nxgipd is a monitoring daemon for UTC Interlogix/GE Security/Caddx NetworX
+series alarm systems that use the NetworX NX-584 protocol.
 
 Daemon process requires very minimal memory and CPU resource making it suitable
 to be run in on almost any hardware that runs Linux (or feel free to port 
@@ -95,6 +95,7 @@ SERIAL INTERFACE CONFIGURATION
 		 * Send Keypad Text Message (OPTIONAL)
 		 * System Status Request 
 		 * Program Data Request (OPTIONAL)
+		 * Program Data Command (OPTIONAL)
 		 * Set Clock / Calendar Command
 		 * Primary Keypad Function with PIN (OPTIONAL)
 		 * Secondary Keypad Function (OPTIONAL)
@@ -104,6 +105,7 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
         v1.1beta
+		- added support for programming panel using nxcmd
 		- nxcmd now displays command status/result
 		- support for NX-4 and NX-6 added
 		- autodetection of panel features/model

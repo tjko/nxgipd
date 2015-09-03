@@ -30,7 +30,7 @@
 
 
 
-#define LOG_STATUS_CHANGE(oldstate,newstate,chg,t,f)   {		\
+#define LOG_STATUS_CHANGE(oldstate,newstate,chg,t,f) {			\
     if (oldstate != newstate) {						\
       char *logtext = (newstate ? t : f);				\
       if (!init_mode && logtext != NULL) logmsg(0,"%s", logtext);	\
@@ -52,13 +52,11 @@
     }									\
   }
 
-
-
-#define SET_MSG_REPLY(reply,msg,retval,loglevel, ...)			\
-  {									\
+#define SET_MSG_REPLY(reply,msg,retval,loglevel, ...) {			\
     logmsg(loglevel,__VA_ARGS__);					\
     set_message_reply(reply,msg,retval,__VA_ARGS__);			\
   }
+
 
 
 void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_status_t *astat, nx_interface_status_t *istatus) 
@@ -587,7 +585,8 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       uchar keypad = msg->msg[0];
       uchar key = msg->msg[1];
 
-      logmsg(1,"Terminal Mode keypad keystroke received (keypad=%d,len=%d): %02x",keypad,msg->len,key);
+      logmsg(1,"Terminal Mode keypad keystroke received (keypad=%d,len=%d): %02x",
+	     keypad,msg->len,key);
     }
     break;
 
@@ -613,7 +612,8 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
 
   default:
-    if (verbose_mode) fprintf(stderr,"%s: unhandled message 0x%02x\n",nx_timestampstr(msg->r_time),msgnum); 
+    if (verbose_mode) 
+      fprintf(stderr,"%s: unhandled message 0x%02x\n",nx_timestampstr(msg->r_time),msgnum); 
     logmsg(1,"unhandled message 0x%02x",msgnum);
     
   }
@@ -821,7 +821,8 @@ void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 }
 
 
-int read_program_data(int fd, int protocol, int device, int location, int mode, char **datastr, uchar *datatype) 
+int read_program_data(int fd, int protocol, int device, int location, int mode, 
+		      char **datastr, uchar *datatype, uchar *datanibble) 
 {
   nxmsg_t msgout,msgin,msgin2;
   char tmp[16];
@@ -870,7 +871,13 @@ int read_program_data(int fd, int protocol, int device, int location, int mode, 
 
 
   /* reformat the program data */    
-  buf[0]=0;
+  if (type == 3) {
+    buf[0]='"';
+    buf[1]=0;
+  } else {
+    buf[0]=0;
+  }
+
   for(i=0;i<len;i++) {
     int va;
     if (nibble) {
@@ -921,7 +928,11 @@ int read_program_data(int fd, int protocol, int device, int location, int mode, 
     strlcat(buf,tmp,sizeof(buf));
   }
 
+  if (type == 3) 
+    strlcat(buf,"\"",sizeof(buf));
+
   *datatype = type;
+  *datanibble = nibble;
   *datastr = strdup(buf);
   if (!datastr) return -3;
 
@@ -935,6 +946,7 @@ void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
   int ret,loc;
   char *datastr = NULL;
   uchar datatype = 0;
+  uchar datanibble = 0;
   char *datatypestr = NULL;
   const uchar* data;
 
@@ -953,14 +965,14 @@ void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 
   logmsg(1,"Sending Program Data Request (device=%d,location=%d)...",data[0],loc);
 
-  ret = read_program_data(fd,protocol,data[0],loc,1,&datastr,&datatype);
-
+  ret = read_program_data(fd,protocol,data[0],loc,1,
+			  &datastr,&datatype,&datanibble);
   if (ret > 0) {
     switch (datatype) {
     case 0: datatypestr="Bin"; break;
     case 1: datatypestr="Dec"; break;
     case 2: datatypestr="Hex"; break;
-    case 3: datatypestr="Asc"; break;
+    case 3: datatypestr="ASCII"; break;
     default: datatypestr="n/a";
     }
 
@@ -971,6 +983,174 @@ void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
   } else {
     SET_MSG_REPLY(reply,msg,1,0,
 		      "Program Data Request failed (device=%d,location=%d).",data[0],loc); 
+  }
+
+}
+
+
+void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, nx_interface_status_t *istatus,
+				 nx_ipc_msg_reply_t *reply)
+{
+  nxmsg_t msgout,msgout2,msgin;
+  int ret,loc,i;
+  char *datastr = NULL;
+  uchar datatype = 0;
+  uchar datanibble = 0;
+  int datalen = 0;
+  int outcount = 0;
+  char *datatypestr = NULL;
+  const uchar* data;
+
+  if (!msg || !istatus || !reply) return;
+
+  data=msg->data;
+
+  loc = (data[1]&0xf)<<8 | data[2];
+
+  if ((istatus->sup_cmd_msgs[2] & 0x01) == 0) {
+    SET_MSG_REPLY(reply,msg,-1,0,
+		  "Program Data Request not enabled. Message not sent (device=%d,loc=%d).",
+		  data[0],loc);
+    return;
+  }
+
+  if ((istatus->sup_cmd_msgs[2] & 0x02) == 0) {
+    SET_MSG_REPLY(reply,msg,-1,0,
+		  "Program Data Command not enabled. Message not sent (device=%d,loc=%d).",
+		  data[0],loc);
+    return;
+  }
+
+  logmsg(2,"Start Programming (device=%d,location=%d)...",data[0],loc);
+
+  ret = read_program_data(fd,protocol,data[0],loc,1,
+			  &datastr,&datatype,&datanibble);
+  if (ret > 0) {
+    datalen=ret;
+    switch (datatype) {
+    case 0: datatypestr="Bin"; break;
+    case 1: datatypestr="Dec"; break;
+    case 2: datatypestr="Hex"; break;
+    case 3: datatypestr="ASCII"; break;
+    default: datatypestr="n/a";
+    }
+
+    logmsg(2,"Current Program data (dev=%d,loc=%03d,len=%d,type=%s): %s",
+	   data[0],loc,ret,datatypestr,datastr);
+    free(datastr);
+  } else {
+    SET_MSG_REPLY(reply,msg,1,0,
+		      "Program Data Request failed (device=%d,location=%d)",data[0],loc); 
+    return;
+  }
+
+
+  if (data[3] != datatype) {
+    SET_MSG_REPLY(reply,msg,2,0,
+		  "Location data type mismatch (device=%d,location=%d): location stores '%s' data",
+		  data[0],loc,datatypestr);
+    return;
+  }
+
+  if (datatype == 3) {
+    if (data[4] > datalen) {
+      SET_MSG_REPLY(reply,msg,2,0,
+		    "Location length mismatch (device=%d,location=%d): location stores string (max length %d)",
+		    data[0],loc,datalen);
+      return;
+    }
+    /* nxcmd sends any ASCII data padded so padding needed here */
+  } else {
+    if (data[4] != datalen) {
+      SET_MSG_REPLY(reply,msg,2,0,
+		    "Location length mismatch (device=%d,location=%d): location stores %d segments",
+		    data[0],loc,datalen);
+      return;
+    }
+  }
+
+
+  memset(&msgout,0,sizeof(msgout));
+  msgout.msgnum=NX_PROG_DATA_CMD;
+  msgout.len=13;
+  msgout.msg[0]=data[0];
+  msgout.msg[1]=(datanibble?0x10:0x00)|0x20|(data[1] & 0x0f);
+  msgout.msg[2]=data[2];
+  msgout.msg[3]=((datatype & 0x07)<<5)|((datalen-1) & 0x01f);
+
+  memcpy(&msgout2,&msgout,sizeof(msgout2));
+  msgout2.msg[1] |= 0x40;
+  
+  for(i=0; i < datalen; (datanibble ? i+=2 : i++)) {
+    uchar *p = (outcount < 8 ? &msgout.msg[4+outcount] : &msgout2.msg[4+(outcount-8)]);
+    if (datanibble) {
+      *p= ((data[i+6] & 0x0f) << 4) | (data[i+5] & 0x0f);
+    } else {
+      *p=data[5+i];
+    }
+    outcount++;
+  }
+
+#if 0
+  logmsg(1,"msgout: msg=%02x,len=%d: %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x",
+	 msgout.msgnum,msgout.len,
+	 msgout.msg[0],
+	 msgout.msg[1],
+	 msgout.msg[2],
+	 msgout.msg[3],
+	 msgout.msg[4],
+	 msgout.msg[5],
+	 msgout.msg[6],
+	 msgout.msg[7],
+	 msgout.msg[8],
+	 msgout.msg[9],
+	 msgout.msg[10],
+	 msgout.msg[11]);
+#endif
+
+  ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
+  if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
+    logmsg(3,"Program Data Command (#1) succeeded");
+  } else {
+    SET_MSG_REPLY(reply,msg,3,0,"Program Data Command (#1) failed (device=%d,location=%d,type=%d,len=%d)",
+		  data[0],loc,datatype,datalen);
+    return;
+  }
+
+  if (outcount > 8) {
+    ret=nx_send_message(fd,protocol,&msgout2,5,3,NX_POSITIVE_ACK,&msgin);
+    if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
+      logmsg(3,"Program Data Command (#2) succeeded");
+    } else {
+      SET_MSG_REPLY(reply,msg,4,0,"Program Data Command (#2) failed (device=%d,location=%d,type=%d,len=%d)",
+		    data[0],loc,datatype,datalen);
+      return;
+    }
+  }
+
+  logmsg(3,"Programming successful (device=%d,location=%d,len=%d,type=%s,nibble=%d)",
+	 data[0],loc,datalen,datatypestr,datanibble);
+
+
+  ret = read_program_data(fd,protocol,data[0],loc,1,
+			  &datastr,&datatype,&datanibble);
+  if (ret > 0) {
+    datalen=ret;
+    switch (datatype) {
+    case 0: datatypestr="Bin"; break;
+    case 1: datatypestr="Dec"; break;
+    case 2: datatypestr="Hex"; break;
+    case 3: datatypestr="ASCII"; break;
+    default: datatypestr="n/a";
+    }
+
+    SET_MSG_REPLY(reply,msg,0,1,"Programming complete (dev=%d,loc=%03d,len=%d,type=%s): %s",
+		  data[0],loc,ret,datatypestr,datastr);
+    free(datastr);
+  } else {
+    SET_MSG_REPLY(reply,msg,5,0,
+		      "Programming complete, but Program Data Request failed (device=%d,location=%d)",data[0],loc); 
+    return;
   }
 
 }
