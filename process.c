@@ -1023,52 +1023,62 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 
   logmsg(2,"Start Programming (device=%d,location=%d)...",data[0],loc);
 
-  ret = read_program_data(fd,protocol,data[0],loc,1,
+
+  if (loc == 910) {
+    /* this is special location used to do "factory reset" on the device/module */
+    datatype=0;
+    datalen=0;
+  } else {
+
+    ret = read_program_data(fd,protocol,data[0],loc,1,
 			  &datastr,&datatype,&datanibble);
-  if (ret > 0) {
-    datalen=ret;
-    switch (datatype) {
-    case 0: datatypestr="Bin"; break;
-    case 1: datatypestr="Dec"; break;
-    case 2: datatypestr="Hex"; break;
-    case 3: datatypestr="ASCII"; break;
-    default: datatypestr="n/a";
-    }
-
-    logmsg(2,"Current Program data (dev=%d,loc=%03d,len=%d,type=%s): %s",
-	   data[0],loc,ret,datatypestr,datastr);
-    free(datastr);
-  } else {
-    SET_MSG_REPLY(reply,msg,1,0,
-		      "Program Data Request failed (device=%d,location=%d)",data[0],loc); 
-    return;
-  }
-
-
-  if (data[3] != datatype) {
-    SET_MSG_REPLY(reply,msg,2,0,
-		  "Location data type mismatch (device=%d,location=%d): location stores '%s' data",
-		  data[0],loc,datatypestr);
-    return;
-  }
-
-  if (datatype == 3) {
-    if (data[4] > datalen) {
-      SET_MSG_REPLY(reply,msg,2,0,
-		    "Location length mismatch (device=%d,location=%d): location stores string (max length %d)",
-		    data[0],loc,datalen);
+    if (ret > 0) {
+      datalen=ret;
+      switch (datatype) {
+      case 0: datatypestr="Bin"; break;
+      case 1: datatypestr="Dec"; break;
+      case 2: datatypestr="Hex"; break;
+      case 3: datatypestr="ASCII"; break;
+      default: datatypestr="n/a";
+      }
+      
+      logmsg(2,"Current Program data (dev=%d,loc=%03d,len=%d,type=%s): %s",
+	     data[0],loc,ret,datatypestr,datastr);
+      free(datastr);
+    } else {
+      SET_MSG_REPLY(reply,msg,1,0,
+		    "Program Data Request failed (device=%d,location=%d)",data[0],loc); 
       return;
     }
-    /* nxcmd sends any ASCII data padded so padding needed here */
-  } else {
-    if (data[4] != datalen) {
+
+
+    if (data[3] != datatype) {
       SET_MSG_REPLY(reply,msg,2,0,
-		    "Location length mismatch (device=%d,location=%d): location stores %d segments",
-		    data[0],loc,datalen);
+		    "Location data type mismatch (device=%d,location=%d): location stores '%s' data",
+		    data[0],loc,datatypestr);
       return;
+    }
+
+    if (datatype == 3) {
+      if (data[4] > datalen) {
+	SET_MSG_REPLY(reply,msg,2,0,
+		      "Location length mismatch (device=%d,location=%d): location stores string (max length %d)",
+		      data[0],loc,datalen);
+	return;
+      }
+      /* nxcmd sends any ASCII data padded so padding needed here */
+    } else {
+      if (data[4] != datalen) {
+	SET_MSG_REPLY(reply,msg,2,0,
+		      "Location length mismatch (device=%d,location=%d): location stores %d segments",
+		      data[0],loc,datalen);
+	return;
+      }
     }
   }
 
+
+  /* prepare program commands */
 
   memset(&msgout,0,sizeof(msgout));
   msgout.msgnum=NX_PROG_DATA_CMD;
@@ -1091,31 +1101,23 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
     outcount++;
   }
 
-#if 0
-  logmsg(1,"msgout: msg=%02x,len=%d: %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x",
-	 msgout.msgnum,msgout.len,
-	 msgout.msg[0],
-	 msgout.msg[1],
-	 msgout.msg[2],
-	 msgout.msg[3],
-	 msgout.msg[4],
-	 msgout.msg[5],
-	 msgout.msg[6],
-	 msgout.msg[7],
-	 msgout.msg[8],
-	 msgout.msg[9],
-	 msgout.msg[10],
-	 msgout.msg[11]);
-#endif
+
+  /* send first program command */
 
   ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
-  if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
+  if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK && loc != 910) {
     logmsg(3,"Program Data Command (#1) succeeded");
   } else {
-    SET_MSG_REPLY(reply,msg,3,0,"Program Data Command (#1) failed (device=%d,location=%d,type=%d,len=%d)",
-		  data[0],loc,datatype,datalen);
+    if (loc == 910) 
+      SET_MSG_REPLY(reply,msg,0,0,"Factory Reset request sent (device=%d)",data[0])
+    else 
+      SET_MSG_REPLY(reply,msg,3,0,
+		    "Program Data Command (#1) failed (device=%d,location=%d,type=%d,len=%d): %x",
+		    data[0],loc,datatype,datalen,msgin.msgnum);
     return;
   }
+
+  /* send seconf program command (if needed) */
 
   if (outcount > 8) {
     ret=nx_send_message(fd,protocol,&msgout2,5,3,NX_POSITIVE_ACK,&msgin);
@@ -1131,6 +1133,9 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
   logmsg(3,"Programming successful (device=%d,location=%d,len=%d,type=%s,nibble=%d)",
 	 data[0],loc,datalen,datatypestr,datanibble);
 
+
+
+  /* re-read programmed location to verify the new contents... */
 
   ret = read_program_data(fd,protocol,data[0],loc,1,
 			  &datastr,&datatype,&datanibble);

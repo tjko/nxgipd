@@ -255,6 +255,7 @@ int main(int argc, char **argv)
   int x10func = 0;
   int nowait = 0;
   int timeout = 10;
+  int force_mode = 0;
   char text1[MESSAGE_LINE_LEN+1];
   char text2[MESSAGE_LINE_LEN+1];
   char progdata[32];
@@ -273,6 +274,7 @@ int main(int argc, char **argv)
     {"version",0,0,'V'},
     {"nowait",0,0,'n'},
     {"timeout",1,0,'t'},
+    {"force",0,0,'f'},
     {NULL,0,0,0}
   };
   program_name="nxcmd";
@@ -284,6 +286,10 @@ int main(int argc, char **argv)
       
     case 'c':
       config_file=strdup(optarg);
+      break;
+
+    case 'f':
+      force_mode=1;
       break;
 
     case 'n':
@@ -441,6 +447,9 @@ int main(int argc, char **argv)
     if (datatype < 0)
       die("invalid data type specified");
     parse_program_data(datatype,progdata,&datalen,argc-(optind+4),argv+(optind+4));
+    if (location == 910 && !force_mode)
+      die("programming this location causes factory-reset of the deivce\n"
+	  " (if this is what you really want use option --force)");
   }
   else if (!strcasecmp(cmd,"message")) {
     int i;
