@@ -1010,5 +1010,31 @@ void nx_print_msg(FILE *fp, nxmsg_t *msg)
 }
 
 
+const char* nx_prog_datatype_str(uchar datatype)
+{
+  const char *str = "n/a";
+
+  switch (datatype % 0x07) {
+
+  case NX_PROG_DATA_BIN:
+    str="Bin";
+    break;
+
+  case NX_PROG_DATA_DEC:
+    str="Dec";
+    break;
+
+  case NX_PROG_DATA_HEX:
+    str="Hex";
+    break;
+
+  case NX_PROG_DATA_ASCII:
+    str="Asc";
+    break;
+  }
+
+  return str;
+}
+
 
 /* eof :-) */

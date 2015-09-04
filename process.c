@@ -947,7 +947,6 @@ void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
   char *datastr = NULL;
   uchar datatype = 0;
   uchar datanibble = 0;
-  char *datatypestr = NULL;
   const uchar* data;
 
   if (!msg || !istatus || !reply) return;
@@ -968,17 +967,9 @@ void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
   ret = read_program_data(fd,protocol,data[0],loc,1,
 			  &datastr,&datatype,&datanibble);
   if (ret > 0) {
-    switch (datatype) {
-    case 0: datatypestr="Bin"; break;
-    case 1: datatypestr="Dec"; break;
-    case 2: datatypestr="Hex"; break;
-    case 3: datatypestr="ASCII"; break;
-    default: datatypestr="n/a";
-    }
-
     SET_MSG_REPLY(reply,msg,0,1,
-		      "Program data (dev=%d,loc=%03d,len=%d,type=%s): %s",
-		      data[0],loc,ret,datatypestr,datastr);
+		  "Program data (dev=%03d,loc=%03d,len=%02d,type=%s): %s",
+		  data[0],loc,ret,nx_prog_datatype_str(datatype),datastr);
     free(datastr);
   } else {
     SET_MSG_REPLY(reply,msg,1,0,
@@ -998,7 +989,6 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
   uchar datanibble = 0;
   int datalen = 0;
   int outcount = 0;
-  char *datatypestr = NULL;
   const uchar* data;
 
   if (!msg || !istatus || !reply) return;
@@ -1034,16 +1024,9 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 			  &datastr,&datatype,&datanibble);
     if (ret > 0) {
       datalen=ret;
-      switch (datatype) {
-      case 0: datatypestr="Bin"; break;
-      case 1: datatypestr="Dec"; break;
-      case 2: datatypestr="Hex"; break;
-      case 3: datatypestr="ASCII"; break;
-      default: datatypestr="n/a";
-      }
       
-      logmsg(2,"Current Program data (dev=%d,loc=%03d,len=%d,type=%s): %s",
-	     data[0],loc,ret,datatypestr,datastr);
+      logmsg(2,"Current Program data (dev=%03d,loc=%03d,len=%02d,type=%s): %s",
+	     data[0],loc,ret,nx_prog_datatype_str(datatype),datastr);
       free(datastr);
     } else {
       SET_MSG_REPLY(reply,msg,1,0,
@@ -1055,7 +1038,7 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
     if (data[3] != datatype) {
       SET_MSG_REPLY(reply,msg,2,0,
 		    "Location data type mismatch (device=%d,location=%d): location stores '%s' data",
-		    data[0],loc,datatypestr);
+		    data[0],loc,nx_prog_datatype_str(datatype));
       return;
     }
 
@@ -1131,7 +1114,7 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
   }
 
   logmsg(3,"Programming successful (device=%d,location=%d,len=%d,type=%s,nibble=%d)",
-	 data[0],loc,datalen,datatypestr,datanibble);
+	 data[0],loc,datalen,nx_prog_datatype_str(datatype),datanibble);
 
 
 
@@ -1141,16 +1124,9 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 			  &datastr,&datatype,&datanibble);
   if (ret > 0) {
     datalen=ret;
-    switch (datatype) {
-    case 0: datatypestr="Bin"; break;
-    case 1: datatypestr="Dec"; break;
-    case 2: datatypestr="Hex"; break;
-    case 3: datatypestr="ASCII"; break;
-    default: datatypestr="n/a";
-    }
 
-    SET_MSG_REPLY(reply,msg,0,1,"Programming complete (dev=%d,loc=%03d,len=%d,type=%s): %s",
-		  data[0],loc,ret,datatypestr,datastr);
+    SET_MSG_REPLY(reply,msg,0,1,"Programming complete (dev=%03d,loc=%03d,len=%02d,type=%s): %s",
+		  data[0],loc,ret,nx_prog_datatype_str(datatype),datastr);
     free(datastr);
   } else {
     SET_MSG_REPLY(reply,msg,5,0,

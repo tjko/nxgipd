@@ -30,11 +30,6 @@
 
 
 
-const char* nx_program_data_types[] = { "Binary","Decimal","Hex","ASCII",
-					"unused(4)","unused(5)","unused(6)","unused(7)" };
-
-
-
 int read_config(int fd, int protocol, uchar node, int location)
 {
   nxmsg_t msgout,msgin,msgin2;
@@ -86,7 +81,7 @@ int read_config(int fd, int protocol, uchar node, int location)
 	  }
 	}
 
-	printf("Location=%03d (len=%02d type=%-8s): ",loc,len,nx_program_data_types[type]);
+	printf("Location=%03d (len=%02d type=%-4s): ",loc,len,nx_prog_datatype_str(type));
 	for(i=0;i<len;i++) {
 	  int va;
 	  if (nibble) {
@@ -174,9 +169,11 @@ int probe_bus(int fd, int protocol)
 	len=(msgin.msg[3] & 0x1f) + 1;
 	type=(msgin.msg[3] >> 5 & 0x07);
 		      
-	printf("Node=%03d: A DEVICE FOUND! (first location length=%d,type=%s)\n",node,len,nx_program_data_types[type]);
+	printf("Node=%03d: A DEVICE FOUND! (first location length=%d,type=%s)\n",
+	       node,len,nx_prog_datatype_str(type));
       } else {
-	printf("Node=%03d: failed to get data (reply %02x)\n",node, msgin.msgnum & NX_MSG_MASK);
+	printf("Node=%03d: failed to get data (reply %02x)\n",
+	       node, msgin.msgnum & NX_MSG_MASK);
       }
     } else {
       printf("Node=%03d: no reply\n",node);

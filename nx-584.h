@@ -171,6 +171,15 @@
 #define NX_X10_DIM                     0x48
 #define NX_X10_BRIGHT                  0x58
 #define NX_X10_ALL_LIGHTS_OFF          0x68
+
+
+/* Program Data data types */
+
+#define NX_PROG_DATA_BIN               0x00
+#define NX_PROG_DATA_DEC               0x01
+#define NX_PROG_DATA_HEX               0x02
+#define NX_PROG_DATA_ASCII             0x03
+
  
 
 typedef unsigned char uchar;
@@ -237,7 +246,7 @@ const char* nx_log_event_str(const nx_log_event_t *event);
 const char* nx_log_event_text(uchar eventnum);
 int nx_log_event_partinfo(uchar eventnum);
 char nx_log_event_valtype(uchar eventnum);
-
+const char* nx_prog_datatype_str(uchar datatype);
 
 
 void logmsg(int priority, char *format, ...);
