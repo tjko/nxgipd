@@ -35,9 +35,11 @@ SUPPORTED ALARM PANEL MODELS
 	NX-6 (V2)
 	NX-8 (V2)
 	NX-8E 
+	CS575 (Aritech)
 
-	Other panels that use same "Networx NX-584 RS-232 Gateway
-	Interface Protocol" should work fine as well (NX-4, NX-6, ...)
+	Other panels that use same "NetworX NX-584 RS-232 Gateway
+	Interface Protocol" should work fine as well (NX-10, CS275,
+        CS375, CS875, ...)
 
 
 REQUIREMENTS
@@ -107,7 +109,7 @@ HISTORY
         v1.1beta
 		- added support for programming panel using nxcmd
 		- nxcmd now displays command status/result
-		- support for NX-4 and NX-6 added
+		- support for NX-4, NX-6, and CS575 added
 		- autodetection of panel features/model
 		- fix bug in IPC message sizing (nxcmd didn't work correctly
 		  on non x86_64 architectures)
