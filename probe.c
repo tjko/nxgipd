@@ -39,6 +39,12 @@ int read_config(int fd, int protocol, uchar node, int location)
   int locstart = 0;
 
 
+  /* ignore any pending messages */
+  do {
+    ret=nx_receive_message(fd,protocol,&msgin,0);
+  } while (ret==1);
+
+
   printf("Scanning module %d\n",node);
 
   if (location >=0) {
@@ -47,6 +53,7 @@ int read_config(int fd, int protocol, uchar node, int location)
   }
 
   for(loc=locstart;loc<=maxloc;loc++) {
+    int retries = 3;
     
     memset(&msgin,0,sizeof(msgin));
     memset(&msgin2,0,sizeof(msgin2));
@@ -58,7 +65,16 @@ int read_config(int fd, int protocol, uchar node, int location)
     msgout.msg[2]=(loc & 0xff);
 
     //printf("Reading location %04x (%d) [%02x %02x %02x %02x]\n",loc,loc,msgout.msgnum,msgout.msg[0],msgout.msg[1],msgout.msg[2]);
-    ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PROG_DATA_REPLY,&msgin);
+    do {
+      if (retries < 3) {
+	//printf("retry %d\n",retries);
+	do {
+	  ret=nx_receive_message(fd,protocol,&msgin,0);
+	  //if (ret==1) printf("ignoring pending message: %d\n",msgin.msgnum);
+	} while (ret==1);
+      }
+      ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PROG_DATA_REPLY,&msgin);
+    } while (retries-- > 0 && (ret==1 && msgin.msgnum == NX_NEGATIVE_ACK));
     if (ret==1) {
       if (msgin.msgnum == NX_PROG_DATA_REPLY) {
 	//nx_print_msg(stdout,&msgin);
@@ -81,7 +97,7 @@ int read_config(int fd, int protocol, uchar node, int location)
 	  }
 	}
 
-	printf("Location=%03d (len=%02d type=%-4s): ",loc,len,nx_prog_datatype_str(type));
+	printf("Location=%03d (len=%02d type=%3s): ",loc,len,nx_prog_datatype_str(type));
 	for(i=0;i<len;i++) {
 	  int va;
 	  if (nibble) {
