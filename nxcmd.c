@@ -381,7 +381,7 @@ int main(int argc, char **argv)
   shmid = shmget(config->shmkey,sizeof(nx_shm_t),0);
   if (shmid < 0) {
     if (errno==EINVAL) 
-      die("nxstat version mismatch with daemon version (shared memory segment wrong size)");
+      die("version mismatch with daemon version (shared memory segment wrong size)");
     if (errno==ENOENT)
       die("cannot find share memory segment (server not running?)");
     die("shmget() failed: %s (%d)\n",strerror(errno),errno);
@@ -391,7 +391,7 @@ int main(int argc, char **argv)
     die("shmat() failed: %d (%s)\n",errno,strerror(errno));
 
   if (strcmp(shm->shmversion, SHMVERSION))
-    die("nxstat version mismatch with daemon (shared memory) version: %s vs %s", 
+    die("version mismatch with daemon (shared memory) version: %s vs %s", 
 	SHMVERSION, shm->shmversion);
 
 
