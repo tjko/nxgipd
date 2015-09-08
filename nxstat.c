@@ -233,6 +233,11 @@ int main(int argc, char **argv)
   istatus=&shm->intstatus;
   astat=&shm->alarmstatus;
 
+  if (strcmp(shm->shmversion, SHMVERSION))
+    die("nxstat version mismatch with daemon (shared memory) version: %s vs %s", 
+	SHMVERSION, shm->shmversion);
+
+
 
   /* check if server process is alive... */
 

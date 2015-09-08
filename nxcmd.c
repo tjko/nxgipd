@@ -390,6 +390,9 @@ int main(int argc, char **argv)
   if (shm == (void*)-1)  
     die("shmat() failed: %d (%s)\n",errno,strerror(errno));
 
+  if (strcmp(shm->shmversion, SHMVERSION))
+    die("nxstat version mismatch with daemon (shared memory) version: %s vs %s", 
+	SHMVERSION, shm->shmversion);
 
 
   if (verbose_mode) {
