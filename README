@@ -80,13 +80,15 @@ SERIAL INTERFACE CONFIGURATION
        - Speed: 9600 Baud 
 
        - Enabled Transision Messages:
-       	 	 * Interface Configuration
+       	 	 * Interface Configuration Message
 		 * Zone Status Message
 		 * Partition Status Message
 		 * System Status Message
 		 * Log Event Message
+		 * Keypad Message Received (OPTIONAL)
+		 * X-10 Message Received (OPTIONAL)
 
-	- Enabled Commands:
+       - Enabled Commands:
        	 	 * Interface Configuration Request
 		 * Zone Name Request
 		 * Zone Status Request
@@ -94,6 +96,7 @@ SERIAL INTERFACE CONFIGURATION
 		 * Partition Status Request
 		 * Partitions Snapshot Request
 		 * Send X-10 Message (OPTIONAL)
+		 * Log Event Request
 		 * Send Keypad Text Message (OPTIONAL)
 		 * System Status Request 
 		 * Program Data Request (OPTIONAL)
@@ -107,6 +110,7 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
         v1.1beta
+		- added option -t to nxstat to sort zones by last change time
 		- added support for programming panel using nxcmd
 		- nxcmd now displays command status/result
 		- support for NX-4, NX-6, and CS575 added

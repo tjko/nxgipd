@@ -64,6 +64,17 @@ nx_configuration_t configuration;
 nx_configuration_t *config = &configuration;
 
 
+static int sort_time_func(const void *p1, const void *p2)
+{
+  const nx_zone_status_t *z1 = * (const nx_zone_status_t**)p1;
+  const nx_zone_status_t *z2 = * (const nx_zone_status_t**)p2;
+
+  if (z1->last_tripped < z2->last_tripped) return 1;
+  if (z1->last_tripped > z2->last_tripped) return -1;
+  if (z1->num < z2->num) return -1;
+  if (z1->num > z2->num) return 1;
+  return 0;
+}
 
 
 int main(int argc, char **argv)
@@ -85,6 +96,8 @@ int main(int argc, char **argv)
   int system_status = 0;
   int csv_mode = 0;
   int display_all = 0;
+  int sort_time = 0;
+  nx_zone_status_t* zonemap[NX_ZONES_MAX];
 
   struct option long_options[] = {
     {"all",0,0,'a'},
@@ -95,6 +108,7 @@ int main(int argc, char **argv)
     {"log",2,0,'l'},
     {"partition",1,0,'p'},
     {"system",0,0,'s'},
+    {"time",0,0,'t'},
     {"verbose",0,0,'v'},
     {"version",0,0,'V'},
     {"zones",0,0,'z'},
@@ -106,7 +120,7 @@ int main(int argc, char **argv)
 
   umask(022);
 
-  while ((opt=getopt_long(argc,argv,"aip:svVhCc:l::zZ",long_options,&opt_index)) != -1) {
+  while ((opt=getopt_long(argc,argv,"aip:stvVhCc:l::zZ",long_options,&opt_index)) != -1) {
     switch (opt) {
 
     case 'a':
@@ -127,6 +141,10 @@ int main(int argc, char **argv)
 
     case 's':
       system_status=1;
+      break;
+
+    case 't':
+      sort_time=1;
       break;
 
     case 'v':
@@ -181,6 +199,7 @@ int main(int argc, char **argv)
 	      "  --log=<n>, -l <n>       display last n entries of panel log\n"
 	      "  --partition=<b>, -p <b> display full partition status\n"
 	      "  --system, -s            display full system status\n"
+	      "  --time, -t              sort zones by last trigger/trouble date\n"
 	      "  --verbose, -v           enable verbose output to stdout\n"
 	      "  --version, -V           print program version\n"
 	      "  --zones, -z             display short zone status info\n"
@@ -606,6 +625,14 @@ int main(int argc, char **argv)
 
   if (csv_mode && zones_mode > 0) 
     zones_mode=2;
+  
+
+  for(i=0;i<azones;i++) 
+    zonemap[i]=&astat->zones[i];
+  if (sort_time) {
+    qsort(zonemap,azones,sizeof(nx_zone_status_t*),sort_time_func);
+  }
+
 
   if (zones_mode==1) {
     nx_zone_status_t *zn;
@@ -618,7 +645,7 @@ int main(int argc, char **argv)
     for (i=0;i<azones;i++) {
       z=(i%3)*rows+(i/3);
       if (z < azones) {
-	zn=&astat->zones[z];
+	zn=zonemap[z];
 
 	printf("%c%16s%c=%-6s ",
 	       (zn->bypass?'{':'['),
@@ -646,7 +673,7 @@ int main(int argc, char **argv)
     }
 
     for(i=0;i<azones;i++) {
-      zn=&astat->zones[i];
+      zn=zonemap[i];
       if (zn->last_tripped > 0) {
 	snprintf(tmp,sizeof(tmp)-1,"(%s ago)",timedeltastr(now - zn->last_tripped));
 	tmp[sizeof(tmp)-1]=0;
@@ -656,7 +683,7 @@ int main(int argc, char **argv)
 
       if (display_all || zn->last_updated > 0)
 	printf((csv_mode ? "zone,%d,%s,%s,%s,%s,%s\n" : "%02d    %-16s  %-8s  %-6s  %s %s\n"),
-	       i+1,
+	       zn->num,
 	       zn->name,
 	       (zn->bypass?"Bypassed":"Active"),
 	       (zn->fault?"Fault":(zn->trouble?"Trouble":"OK")),

@@ -18,7 +18,7 @@
 #define PRGNAME "nxgipd"
 
 /* shared memory version, update if shared memory locations change... */
-#define SHMVERSION "42.5"
+#define SHMVERSION "42.6"
 
 #ifndef CONFIG_FILE
 #define CONFIG_FILE "/etc/nxgipd.conf"
@@ -69,6 +69,7 @@ typedef struct nx_partition_status {
 
 typedef struct nx_zone_status {
   char valid;
+  uchar num;
   char name[NX_ZONE_NAME_MAXLEN+1];
   char fault;
   char tamper;

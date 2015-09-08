@@ -1296,6 +1296,7 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
   for (i=0;i<NX_ZONES_MAX;i++) {
     astat->zones[i].valid=-1;
     astat->zones[i].last_updated=0;
+    astat->zones[i].num=i+1;
   }
   
 
