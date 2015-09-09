@@ -68,7 +68,7 @@ int trigger_processes = 0;
 void signal_handler(int sig)
 {
   pid_t pid;
-  int status;
+  int status, r;
 
 
   /* handle daemon "crash" ... */
@@ -83,7 +83,21 @@ void signal_handler(int sig)
   }
 
 
-  /* abort on anything but SIGCHLD */
+  /* save status when SIGUSR1 is received... */
+  if (sig == SIGUSR1) {
+    if (config->status_file && astat && 
+	shm != NULL && shm->daemon_started > 0) {
+      logmsg(0,"received SIGUSR1 signal, saving system status");
+      r = save_status_xml(config->status_file, astat);
+      if (r != 0) {
+	logmsg(0,"failed to save alarm status: %s (%d)",config->status_file,r);
+      }
+    }
+    return;
+  }
+
+
+  /* abort on anything else except SIGCHLD */
   if (sig != SIGCHLD) { 
     logmsg(0,"program terminated: signal=%d (%s)", sig, strsignal(sig));
     exit(1); // we want at_exit functions to run...
@@ -290,10 +304,10 @@ int main(int argc, char **argv)
   sigaction(SIGBUS,&sigact,NULL);
   sigaction(SIGFPE,&sigact,NULL);
   sigaction(SIGILL,&sigact,NULL);
+  sigaction(SIGUSR1,&sigact,NULL);
 
   sigact.sa_handler=SIG_IGN;
   sigaction(SIGHUP,&sigact,NULL);
-  sigaction(SIGUSR1,&sigact,NULL);
   sigaction(SIGUSR2,&sigact,NULL);
 
 

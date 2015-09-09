@@ -88,6 +88,18 @@ Enable more verbose output to stdout (when not running as daemon).
 Print program version and exit.
 
 
+.SH SIGNALS
+.I nxgipd 
+is designed to be run as a daemon process, so it will ignore most signals
+to avoid it being terminated accidentally.
+
+Special signals:
+
+.IP \[bu] 2
+.I SIGUSR1
+this signal can be used to tell nxgipd daemon to immediately save current
+state into the status file (if one is specified in nxgipd.conf).
+
 
 .SH BUGS
 If 
