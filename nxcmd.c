@@ -205,7 +205,9 @@ void print_usage()
 	  "  bypass                              Bypass interiors\n"
 	  "  grpbypass                           Group bypass\n"
 	  "  smokereset                          Smoke detector reset\n"
-	  "  sounder                             Start keypad sounder\n\n"
+	  "  sounder                             Start keypad sounder\n"
+	  "  setclock                            Synchronize alarm clock with system clock\n"
+	  "\n"
 	  "  zonebypass <n>                      Toggle zone bypass status\n"
 	  "  x10 <house> <unit> <func>           Send X-10 Message/Command\n"
 	  "  message <n> <line1> <line2> <sec>   Display text message on keypad\n"
@@ -416,6 +418,7 @@ int main(int argc, char **argv)
   else if (!strcasecmp(cmd,"silence")) nxcmd=NX_KEYPAD_FUNC_SILENCE;
   else if (!strcasecmp(cmd,"cancel")) nxcmd=NX_KEYPAD_FUNC_CANCEL;
   else if (!strcasecmp(cmd,"autoarm")) nxcmd=NX_KEYPAD_FUNC_AUTO_ARM;
+  else if (!strcasecmp(cmd,"setclock")) msgtype=NX_IPC_SET_CLOCK;
   else if (!strcasecmp(cmd,"zonebypass")) {
     msgtype=NX_IPC_MSG_BYPASS;
     if (args > 1) 
@@ -578,6 +581,9 @@ int main(int argc, char **argv)
       ipcmsg.data[0]=x10house & 0x0f;;
       ipcmsg.data[1]=x10unit & 0x0f;
       ipcmsg.data[2]=x10func;
+      break;
+    case NX_IPC_SET_CLOCK:
+      // no parameters for this message
       break;
 
     default:

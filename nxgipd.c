@@ -476,7 +476,7 @@ int main(int argc, char **argv)
       /* update panel clock, if its time... */
       if ( (astat->timesync_interval > 0) && 
 	   (astat->last_timesync + (astat->timesync_interval*3600) < t) ) {
-	process_set_clock(fd,config->serial_protocol,astat);
+	process_set_clock(fd,config->serial_protocol,astat,NULL,istatus,NULL);
       }
 
 
@@ -508,6 +508,9 @@ int main(int argc, char **argv)
 	  break;
 	case NX_IPC_X10_CMD:
 	  process_x10_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
+	  break;
+	case NX_IPC_SET_CLOCK:
+	  process_set_clock(fd,config->serial_protocol,astat,&ipcmsg,istatus,reply);
 	  break;
 	default:
 	  logmsg(0,"unknown IPC message received: %d",ipcmsg.msgtype);

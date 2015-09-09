@@ -1214,12 +1214,30 @@ void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 }
 
 
-void process_set_clock(int fd, int protocol, nx_system_status_t *astat)
+void process_set_clock(int fd, int protocol, nx_system_status_t *astat,
+		       const nx_ipc_msg_t *msg, nx_interface_status_t *istatus,
+		       nx_ipc_msg_reply_t *reply)
 {
   nxmsg_t msgout,msgin;
   struct tm tt;
   time_t t = time(NULL);
   int ret; 
+  int cmdmode = 0;
+
+  if (!astat) return;
+  if (msg && istatus && reply) cmdmode=1;
+
+
+  if (istatus && (istatus->sup_cmd_msgs[3] & 0x08) == 0) {
+    if (cmdmode) {
+      SET_MSG_REPLY(reply,msg,-1,0,"Set Clock / Calendar Command not enabled. Message not sent.");
+    } else {
+      logmsg(0,"Set Clock / Calendar Command not enabled. Message not sent.");
+    }
+    return;
+  }
+
+
 
   if (localtime_r(&t,&tt)) {
     msgout.msgnum=NX_SET_CLOCK_CMD;
@@ -1230,17 +1248,25 @@ void process_set_clock(int fd, int protocol, nx_system_status_t *astat)
     msgout.msg[3]=tt.tm_hour;
     msgout.msg[4]=tt.tm_min;
     msgout.msg[5]=tt.tm_wday+1;
-    logmsg(3,"setting panel time to: %02d-%02d-%02d %02d:%02d weedkay=%d",
+    logmsg(2,"setting panel time to: %02d-%02d-%02d %02d:%02d weedkay=%d",
 	   msgout.msg[0],msgout.msg[1],msgout.msg[2],msgout.msg[3],
 	   msgout.msg[4],msgout.msg[5]);
     ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
     if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
-      logmsg(1,"panel clock synchronized successfully");
+      if (cmdmode) {
+	SET_MSG_REPLY(reply,msg,0,1,"panel clock synchronized successfully");
+      } else {
+	logmsg(1,"panel clock synchronized successfully");
+      }
     } else {
-      logmsg(1,"failed to set panel clock");
+      if (cmdmode) {
+	SET_MSG_REPLY(reply,msg,1,0,"failed to set panel clock");
+      } else {
+	logmsg(0,"failed to set panel clock");
+      }
     }
   } else {
-    logmsg(2,"localtime_r() call failed");
+    logmsg(1,"localtime_r() call failed");
   }
   
   astat->last_timesync=t;

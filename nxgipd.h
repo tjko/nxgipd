@@ -226,6 +226,7 @@ typedef struct nx_ipc_msg_reply {
 #define NX_IPC_MSG_MESSAGE   4
 #define NX_IPC_X10_CMD       5
 #define NX_IPC_MSG_SET_PROG  6
+#define NX_IPC_SET_CLOCK     7
 
 #define IPC_MSG_REPLY_TABLE_SIZE 64
 
@@ -293,7 +294,10 @@ void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 			 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
 
-void process_set_clock(int fd, int protocol, nx_system_status_t *astat);
+void process_set_clock(int fd, int protocol, nx_system_status_t *astat,
+		       const nx_ipc_msg_t *msg, nx_interface_status_t *istatus,
+		       nx_ipc_msg_reply_t *reply);
+
 int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
 int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
 
