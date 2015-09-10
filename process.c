@@ -1249,7 +1249,7 @@ void process_set_clock(int fd, int protocol, nx_system_status_t *astat,
     msgout.msg[3]=tt.tm_hour;
     msgout.msg[4]=tt.tm_min;
     msgout.msg[5]=tt.tm_wday+1;
-    logmsg(2,"setting panel time to: %02d-%02d-%02d %02d:%02d weedkay=%d",
+    logmsg(2,"setting panel time to: %02d-%02d-%02d %02d:%02d weekday=%d",
 	   msgout.msg[0],msgout.msg[1],msgout.msg[2],msgout.msg[3],
 	   msgout.msg[4],msgout.msg[5]);
     ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
@@ -1331,7 +1331,8 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
 			 config->partitions : NX_PARTITIONS_MAX);
 
   astat->statuscheck_interval = (config->statuscheck > 0 ? config->statuscheck : 30);
-  astat->timesync_interval = config->timesync;
+  astat->timesync_interval = (config->timesync > 0 ? config->timesync : 0);
+  astat->savestatus_interval = (config->status_save_interval > 0 ? config->status_save_interval : 0);
 
   if ( (astat->timesync_interval > 0) &&
        ((istatus->sup_cmd_msgs[3] & 0x08) == 0) ) {

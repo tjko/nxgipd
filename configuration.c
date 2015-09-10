@@ -260,6 +260,12 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
     config->status_file=strdup(tmpstr);
   }
 
+  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","savestatus");
+  if (node) {
+    if (sscanf(node->value.text.string,"%d",&i)==1) config->status_save_interval=i;
+    else die("invalid savestatus setting value");
+  }
+
 
   node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","alarmprogram");
   if (node) {

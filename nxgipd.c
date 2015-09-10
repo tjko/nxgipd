@@ -473,10 +473,22 @@ int main(int argc, char **argv)
       }
 
 
-      /* update panel clock, if its time... */
+      /* update panel clock periodically (if enabled) */
       if ( (astat->timesync_interval > 0) && 
 	   (astat->last_timesync + (astat->timesync_interval*3600) < t) ) {
 	process_set_clock(fd,config->serial_protocol,astat,NULL,istatus,NULL);
+      }
+
+      /* periodically save status (if enabled) */
+      if ( (astat->savestatus_interval > 0) &&
+	   (astat->last_savestatus + (astat->timesync_interval*60) < t) &&
+	   config->status_file ) {
+	logmsg(2,"saving alarm status to: %s",config->status_file);
+	ret=save_status_xml(config->status_file,astat);
+	if (ret != 0)
+	  logmsg(0,"failed to save alarm status: %s (%d)",
+		 config->status_file,ret);
+	astat->last_savestatus=t;
       }
 
 

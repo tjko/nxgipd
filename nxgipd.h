@@ -167,6 +167,9 @@ typedef struct nx_system_status {
 
   time_t last_timesync;
   time_t timesync_interval;
+
+  time_t last_savestatus;
+  time_t savestatus_interval;
 } nx_system_status_t;
 
 
@@ -183,6 +186,7 @@ typedef struct nx_configuration {
   int   debug_mode;
   char *log_file;
   char *status_file;
+  int   status_save_interval;
 
   char *alarm_program;
   uchar trigger_enable;
