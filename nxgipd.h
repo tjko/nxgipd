@@ -18,7 +18,7 @@
 #define PRGNAME "nxgipd"
 
 /* shared memory version, update if shared memory locations change... */
-#define SHMVERSION "42.6"
+#define SHMVERSION "42.7"
 
 #ifndef CONFIG_FILE
 #define CONFIG_FILE "/etc/nxgipd.conf"
