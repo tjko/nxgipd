@@ -298,12 +298,10 @@ void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 			 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
 
-void process_set_clock(int fd, int protocol, nx_system_status_t *astat,
-		       const nx_ipc_msg_t *msg, nx_interface_status_t *istatus,
-		       nx_ipc_msg_reply_t *reply);
-
+int process_set_clock(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
 int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
 int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
+
 
 /* trigger.c */
 void  run_zone_trigger(int zonenum,const char* zonename, int fault, int bypass, int trouble,

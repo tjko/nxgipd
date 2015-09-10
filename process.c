@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <time.h>
 #include "nx-584.h"
 #include "nxgipd.h"
@@ -1215,30 +1216,39 @@ void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 }
 
 
-void process_set_clock(int fd, int protocol, nx_system_status_t *astat,
-		       const nx_ipc_msg_t *msg, nx_interface_status_t *istatus,
-		       nx_ipc_msg_reply_t *reply)
+int process_set_clock(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus)
 {
   nxmsg_t msgout,msgin;
   struct tm tt;
-  time_t t = time(NULL);
+  time_t t;
   int ret; 
-  int cmdmode = 0;
-
-  if (!astat) return;
-  if (msg && istatus && reply) cmdmode=1;
+  int sec;
 
 
-  if (istatus && (istatus->sup_cmd_msgs[3] & 0x08) == 0) {
-    if (cmdmode) {
-      SET_MSG_REPLY(reply,msg,-1,0,"Set Clock / Calendar Command not enabled. Message not sent.");
-    } else {
-      logmsg(0,"Set Clock / Calendar Command not enabled. Message not sent.");
-    }
-    return;
+  if ((istatus->sup_cmd_msgs[3] & 0x08) == 0) {
+    logmsg(0,"Set Clock / Calendar Command not enabled. Message not sent.");
+    return -1;
   }
 
 
+  t=time(NULL);
+  if (!localtime_r(&t,&tt)) {
+    logmsg(0,"localtime_r() call failed");
+    return 1;
+  }
+  sec=tt.tm_sec;
+  t+=60;
+  if (!localtime_r(&t,&tt)) {
+    logmsg(0,"localtime_r() call failed");
+    return 2;
+  }
+
+  /* wait until we're 1 second before the next minute... */
+  if (sec < 59) {
+    logmsg(3,"sleeping %d seconds",(59-sec));
+    sleep(59-sec);
+  }
+  usleep(500000);
 
   if (localtime_r(&t,&tt)) {
     msgout.msgnum=NX_SET_CLOCK_CMD;
@@ -1254,23 +1264,18 @@ void process_set_clock(int fd, int protocol, nx_system_status_t *astat,
 	   msgout.msg[4],msgout.msg[5]);
     ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
     if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK) {
-      if (cmdmode) {
-	SET_MSG_REPLY(reply,msg,0,1,"panel clock synchronized successfully");
-      } else {
-	logmsg(1,"panel clock synchronized successfully");
-      }
+      logmsg(1,"panel clock synchronized successfully");
     } else {
-      if (cmdmode) {
-	SET_MSG_REPLY(reply,msg,1,0,"failed to set panel clock");
-      } else {
-	logmsg(0,"failed to set panel clock");
-      }
+      logmsg(0,"failed to set panel clock");
+      return 3;
     }
   } else {
-    logmsg(1,"localtime_r() call failed");
+    logmsg(0,"localtime_r() call failed");
+    return 4;
   }
   
   astat->last_timesync=t;
+  return 0;
 }
 
 

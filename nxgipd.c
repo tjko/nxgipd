@@ -166,6 +166,7 @@ int main(int argc, char **argv)
   int scan_loc = -1;
   int log_mode = 0;
   int daemon_mode = 0;
+  int clock_sync_needed = 0;
   char *config_file = CONFIG_FILE;
   char *pid_file = NULL;
   struct sigaction sigact;
@@ -438,7 +439,7 @@ int main(int argc, char **argv)
   while (1) {
 
     /* wait for message to come in (or timeout)... */
-    ret=nx_receive_message(fd,config->serial_protocol,&msgin,3);
+    ret=nx_receive_message(fd,config->serial_protocol,&msgin,1);
     if (ret < -1) {
       logmsg(0,"error reading message");
     } else if (ret == -1) {
@@ -454,6 +455,21 @@ int main(int argc, char **argv)
       /* no message received (timeout), check if there is anything else to do... */
 
       time_t t = time(NULL);
+
+
+      /* attempt clock sync only when time is close to next full minute... */
+      if (clock_sync_needed) {
+	struct tm tt;
+	
+	if (localtime_r(&t,&tt)) {
+	  if (tt.tm_sec > 56) {
+	    process_set_clock(fd,config->serial_protocol,astat,istatus);
+	    clock_sync_needed=0;
+	  }
+	} else {
+	  logmsg(1,"localtime_r() failed");
+	}
+      }
 
 
       /* periodially check that panel is responding... */
@@ -474,14 +490,18 @@ int main(int argc, char **argv)
 
 
       /* update panel clock periodically (if enabled) */
-      if ( (astat->timesync_interval > 0) && 
+      if ( !clock_sync_needed && 
+	   (astat->timesync_interval > 0) && 
 	   (astat->last_timesync + (astat->timesync_interval*3600) < t) ) {
-	process_set_clock(fd,config->serial_protocol,astat,NULL,istatus,NULL);
+	clock_sync_needed=1;
+	logmsg(2,"clock sync needed");
       }
+
+
 
       /* periodically save status (if enabled) */
       if ( (astat->savestatus_interval > 0) &&
-	   (astat->last_savestatus + (astat->timesync_interval*60) < t) &&
+	   (astat->last_savestatus + (astat->savestatus_interval*60) < t) &&
 	   config->status_file ) {
 	logmsg(2,"saving alarm status to: %s",config->status_file);
 	ret=save_status_xml(config->status_file,astat);
@@ -522,7 +542,9 @@ int main(int argc, char **argv)
 	  process_x10_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
 	  break;
 	case NX_IPC_SET_CLOCK:
-	  process_set_clock(fd,config->serial_protocol,astat,&ipcmsg,istatus,reply);
+	  clock_sync_needed=1;
+	  logmsg(1,"synchronize clock request message received");
+	  set_message_reply(reply,&ipcmsg,0,"clock synchronization scheduled");
 	  break;
 	default:
 	  logmsg(0,"unknown IPC message received: %d",ipcmsg.msgtype);
