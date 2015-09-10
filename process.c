@@ -1091,12 +1091,13 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
   if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK && loc != 910) {
     logmsg(3,"Program Data Command (#1) succeeded");
   } else {
-    if (loc == 910) 
-      SET_MSG_REPLY(reply,msg,0,0,"Factory Reset request sent (device=%d)",data[0])
-    else 
+    if (loc == 910) { 
+      SET_MSG_REPLY(reply,msg,0,0,"Factory Reset request sent (device=%d)",data[0]);
+    } else  {
       SET_MSG_REPLY(reply,msg,3,0,
 		    "Program Data Command (#1) failed (device=%d,location=%d,type=%d,len=%d): %x",
 		    data[0],loc,datatype,datalen,msgin.msgnum);
+    }
     return;
   }
 
