@@ -218,7 +218,7 @@ const char* nx_log_event_str(const nx_log_event_t *event)
 
   if (ev >= 0) {
     if (nx_log_event_types[ev].valtype == 'Z') snprintf(tmp1,sizeof(tmp1)-1,", Zone=%d",event->num+1);
-    else if (nx_log_event_types[ev].valtype == 'U') snprintf(tmp1,sizeof(tmp1)-1,", User=%d",event->num);
+    else if (nx_log_event_types[ev].valtype == 'U') snprintf(tmp1,sizeof(tmp1)-1,", User=%d",event->num+1);
     else if (nx_log_event_types[ev].valtype == 'D') snprintf(tmp1,sizeof(tmp1)-1,", Device=%d",event->num);
     else tmp1[0]=0;
     tmp1[sizeof(tmp1)-1]=0;
