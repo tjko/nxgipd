@@ -4,7 +4,7 @@
 # Makefile for nxgipd
 #
 
-Version = 1.1beta
+Version = 1.1.0
 PKGNAME = nxgipd
 
 BuildDate = $(shell date +%Y-%m-%d)
