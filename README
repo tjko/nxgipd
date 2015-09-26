@@ -1,5 +1,5 @@
-nxgipd v1.1.0
-=============
+nxgipd v1.1.1beta
+=================
 
 nxgipd is a monitoring daemon for UTC Interlogix/GE Security/Caddx NetworX
 series alarm systems that use the NetworX NX-584 protocol.
@@ -109,6 +109,8 @@ SERIAL INTERFACE CONFIGURATION
 
 
 HISTORY
+	v1.1.1beta
+		- minor bug fixes	
         v1.1.0  - new configuration setting 'savestatus' to specify status file
                   saving interval
 		- SIGUSR1 signal can now be used to tell daemon to save status

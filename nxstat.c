@@ -686,7 +686,7 @@ int main(int argc, char **argv)
 	tmp[0]=0;
       }
 
-      if (display_all || zn->last_updated > 0)
+      if (display_all || zn->last_tripped > 0)
 	printf((csv_mode ? "zone,%d,%s,%s,%s,%s,%s\n" : "%02d    %-16s  %-8s  %-6s  %s %s\n"),
 	       zn->num,
 	       zn->name,
