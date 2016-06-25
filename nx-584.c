@@ -589,7 +589,7 @@ int nx_send_message(int fd, int protocol, nxmsg_t *msg, int timeout, int retry, 
   do {
 
     if (nx_write_packet(fd,msg,protocol) < 0) {
-      logmsg(3,"nx_send_message(): failed to send message %02",msg->msgnum & NX_MSG_MASK);
+      logmsg(3,"nx_send_message(): failed to send message %02d (errno=%d)",msg->msgnum & NX_MSG_MASK, errno);
       return -1;
     }
     logmsg(3,"nx_send_message(): message %02x sent",msg->msgnum & NX_MSG_MASK);
