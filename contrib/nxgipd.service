@@ -1,0 +1,16 @@
+# systemd service file for Debian
+#
+# copy to /etc/systemd/system/
+#
+[Unit]
+Description=nxgipd Alarm Monitoring Daemon
+After=syslog.target network.target
+
+[Service]
+Type=forking
+EnvironmentFile=-/etc/default/nxgipd
+PIDFile=/var/run/nxgipd.pid
+ExecStart=/usr/local/sbin/nxgipd -p /var/run/nxgipd.pid -d -l $NXGIPD_OPTS
+
+[Install]
+WantedBy=multi-user.target
