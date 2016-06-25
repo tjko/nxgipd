@@ -166,7 +166,7 @@ int openserialdevice(const char *device, const char *speed)
     return -1;
   }
 
-  fd = open(device,O_RDWR|O_NONBLOCK|O_CLOEXEC);
+  fd = open(device,O_RDWR|O_NONBLOCK|O_CLOEXEC|O_NOCTTY);
   if (fd < 0) {
     warn("failed to open %s (errno=%d)\n",device,errno);
     return -2;
