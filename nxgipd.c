@@ -329,8 +329,6 @@ int main(int argc, char **argv)
   if (verbose_mode)
     printf("IPC msg: key=0x%08x id=%d\n",config->msgkey,msgid); 
 
-
-
   printf("Opening serial port: %s\n",config->serial_device);
   if ((fd = openserialdevice(config->serial_device,config->serial_speed)) < 0)
     die("Failed to open serial port");
@@ -372,10 +370,9 @@ int main(int argc, char **argv)
 
 
 
-
   /* spawn daemon */
   if (daemon_mode) {
-    int fd;
+    int fdtmp;
     pid_t pid;
 
     if (chdir("/") < 0) die("cannot access root directory");
@@ -389,11 +386,11 @@ int main(int argc, char **argv)
     
     setsid();
     
-    if ((fd = open("/dev/null",O_RDWR)) < 0) die("cannot open /dev/null");
-    dup2(fd,0);
-    dup2(fd,1);
-    dup2(fd,2);
-    close(fd);
+    if ((fdtmp = open("/dev/null",O_RDWR)) < 0) die("cannot open /dev/null");
+    dup2(fdtmp,0);
+    dup2(fdtmp,1);
+    dup2(fdtmp,2);
+    close(fdtmp);
   }
 
   /* create pid file */
