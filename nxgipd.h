@@ -1,10 +1,10 @@
 /* nxgipd.h
  *
- * Copyright (C) 2011 Timo Kokkonen. All Rights Reserved.
+ * Copyright (C) 2011-2016 Timo Kokkonen. All Rights Reserved.
  */
 
-#ifndef _NXGIPD_H
-#define _NXGIPD_H 1
+#ifndef NXGIPD_H
+#define NXGIPD_H 1
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -312,6 +312,6 @@ void run_log_trigger(nx_log_event_t *e);
 
 
 
-#endif
+#endif /* NXGIPD_H */
 
 /* eof :-) */

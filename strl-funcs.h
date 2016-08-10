@@ -23,8 +23,8 @@
  * Boston, MA  02110-1301, USA. 
  */
 
-#ifndef _STRL_FUNCS_H
-#define _STRL_FUNCS_H 1
+#ifndef STRL_FUNCS_H
+#define STRL_FUNCS_H 1
 
 #ifdef  __cplusplus
 extern "C" {
@@ -39,4 +39,4 @@ size_t strlcat(char*, const char*, size_t);
 }
 #endif
 
-#endif /* _STRL_FUNCS_H */
+#endif /* STRL_FUNCS_H */

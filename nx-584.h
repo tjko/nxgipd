@@ -2,7 +2,7 @@
  *
  * Library of functions to implement NX-584 Protocol.
  * 
- * Copyright (C) 2009-2015 Timo Kokkonen <tjko@iki.fi>
+ * Copyright (C) 2009-2016 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _NX_584_H
-#define _NX_584_H 1
+#ifndef NX_584_H
+#define NX_584_H 1
 
 #define NX_PROTOCOL_BINARY    0x00
 #define NX_PROTOCOL_ASCII     0x01
@@ -252,6 +252,6 @@ const char* nx_prog_datatype_str(uchar datatype);
 void logmsg(int priority, char *format, ...);
 
 
-#endif
+#endif /* NX_584_H */
 
 /* eof :-) */
