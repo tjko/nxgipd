@@ -299,7 +299,7 @@ int nx_read_packet(int fd, nxmsg_t *msg, int protocol)
     while (len < multiplier) {
       do {
 	r = read(fd,&tmp[len],(multiplier-len));
-      } while (r==1 && errno==EINTR);
+      } while (r == -1 && errno==EINTR);
       
       if (r < 0) {
 	if (errno == EAGAIN) return 0;
@@ -336,7 +336,7 @@ int nx_read_packet(int fd, nxmsg_t *msg, int protocol)
     while (len < rawlen) {
       do {
 	r = read(fd,&tmp[len],(rawlen-len));
-      } while (r==1 && errno==EINTR);
+      } while (r == -1 && errno==EINTR);
       
       if (r < 0) {
 	if (errno == EAGAIN) return 0;
