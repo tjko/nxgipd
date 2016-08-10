@@ -1,4 +1,4 @@
-.TH NXSTAT 1 "08 Sep 2013" 
+.TH NXSTAT 1 "09 Aug 2016" 
 .UC 4 
 .SH NAME 
 nxstat \- display status of NX-8/NX-8V/NX-8E Alarm Panel.
@@ -58,6 +58,9 @@ entries of the panel event log.
 .B -p <n>, --partition=<n>
 Display detaild partition status information. Valid partition numbers are 1..8.
 .TP 0.6i
+.B -r, --reverse
+Reverse zone sort order. Useful when used with -z or -Z options.
+.TP 0.6i
 .B -s, --system
 Display detailed alarm system status information.
 .TP 0.6i
@@ -84,7 +87,7 @@ nxgipd(1) nxcmd(1)
 Timo Kokkonen <tjko@iki.fi>
 
 .SH COPYING
-Copyright (C) 2009-2015  Timo Kokkonen
+Copyright (C) 2009-2016  Timo Kokkonen
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -2,7 +2,7 @@
  *
  * Tool to display alarm status by querying nxgipd daemon. 
  * 
- * Copyright (C) 2009-2015 Timo Kokkonen <tjko@iki.fi>
+ * Copyright (C) 2009-2016 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -63,16 +63,17 @@ nx_system_status_t *astat;
 nx_configuration_t configuration;
 nx_configuration_t *config = &configuration;
 
+int reverse_sort_order = 0;
 
 static int sort_time_func(const void *p1, const void *p2)
 {
   const nx_zone_status_t *z1 = * (const nx_zone_status_t**)p1;
   const nx_zone_status_t *z2 = * (const nx_zone_status_t**)p2;
 
-  if (z1->last_tripped < z2->last_tripped) return 1;
-  if (z1->last_tripped > z2->last_tripped) return -1;
-  if (z1->num < z2->num) return -1;
-  if (z1->num > z2->num) return 1;
+  if (z1->last_tripped < z2->last_tripped) return (reverse_sort_order ? -1 :  1);
+  if (z1->last_tripped > z2->last_tripped) return (reverse_sort_order ?  1 : -1);
+  if (z1->num < z2->num) return (reverse_sort_order ?  1 : -1);
+  if (z1->num > z2->num) return (reverse_sort_order ? -1 :  1);
   return 0;
 }
 
@@ -107,6 +108,7 @@ int main(int argc, char **argv)
     {"interface",0,0,'i'},
     {"log",2,0,'l'},
     {"partition",1,0,'p'},
+    {"reverse",0,0,'r'},
     {"system",0,0,'s'},
     {"time",0,0,'t'},
     {"verbose",0,0,'v'},
@@ -120,7 +122,7 @@ int main(int argc, char **argv)
 
   umask(022);
 
-  while ((opt=getopt_long(argc,argv,"aip:stvVhCc:l::zZ",long_options,&opt_index)) != -1) {
+  while ((opt=getopt_long(argc,argv,"aip:rstvVhCc:l::zZ",long_options,&opt_index)) != -1) {
     switch (opt) {
 
     case 'a':
@@ -139,6 +141,10 @@ int main(int argc, char **argv)
       interface_status=1;
       break;
 
+    case 'r':
+      reverse_sort_order=1;
+      break;
+      
     case 's':
       system_status=1;
       break;
@@ -632,8 +638,12 @@ int main(int argc, char **argv)
     zones_mode=2;
   
 
-  for(i=0;i<azones;i++) 
-    zonemap[i]=&astat->zones[i];
+  for(i=0;i<azones;i++) {
+    if (reverse_sort_order) 
+      zonemap[(azones-1)-i]=&astat->zones[i];
+    else
+      zonemap[i]=&astat->zones[i];
+  }
   if (sort_time) {
     qsort(zonemap,azones,sizeof(nx_zone_status_t*),sort_time_func);
   }

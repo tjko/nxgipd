@@ -110,6 +110,8 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
 	v1.1.1beta
+		- new -r option to nxstat command
+		- fix to binary protocol support
 		- minor bug fixes	
         v1.1.0  - new configuration setting 'savestatus' to specify status file
                   saving interval
