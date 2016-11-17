@@ -37,6 +37,7 @@
 
 const nx_panel_model_t nx_panel_models[] = {
 /* { panel-ID, model-name, max-zones, max-partitions } */
+   {   2, "NX-8",     48, 8 },
    {   4, "NX-8E",   192, 8 },
    {  10, "NX-4-V2",   8, 1 },
    {  11, "NX-6-V2",  16, 2 },
