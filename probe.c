@@ -246,7 +246,7 @@ int detect_panel(int fd, int protocol, nx_system_status_t *astat, nx_interface_s
   ret=nx_send_message(fd,protocol,&msgout,5,3,NX_SYS_STATUS_MSG,&msgin);
   if (!(ret == 1 && msgin.msgnum == NX_SYS_STATUS_MSG)) return -3;
   panel_id=msgin.msg[0];
-
+  printf("Panel ID: %u\n",panel_id);
 
   /* look for max partitions supported */
 
