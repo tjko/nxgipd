@@ -2,7 +2,7 @@
  *
  * Library of functions to implement NX-584 Protocol.
  * 
- * Copyright (C) 2009-2016 Timo Kokkonen <tjko@iki.fi>
+ * Copyright (C) 2009-2021 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -40,6 +40,7 @@ const nx_panel_model_t nx_panel_models[] = {
 /* {   0, "NX-4",      8, 1 },  ???? */
 /* {   1, "NX-6",     16, 2 },  ???? */
    {   2, "NX-8",     48, 8 },
+   {   3, "NX-4-AU",  48, 8 },
    {   4, "NX-8E",   192, 8 },
    {  10, "NX-4-V2",   8, 1 },
    {  11, "NX-6-V2",  16, 2 },
