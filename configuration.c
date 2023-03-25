@@ -1,5 +1,5 @@
 /* configuration.c - load/save configuration files for nxgipd
- * 
+ *
  *
  * Copyright (C) 2009-2015 Timo Kokkonen <tjko@iki.fi>
  *
@@ -15,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
- * Boston, MA  02110-1301, USA. 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
  *
  * $Id$
  */
@@ -39,10 +39,10 @@ mxml_node_t* load_xml_file(const char *filename)
   mxml_node_t *tree;
 
   if (!filename) return NULL;
-  fp = fopen(filename,"r");
+  fp = fopen(filename, "r");
   if (!fp) return NULL;
 
-  tree=mxmlLoadFile(NULL,fp,MXML_TEXT_CALLBACK);
+  tree=mxmlLoadFile(NULL, fp, MXML_OPAQUE_CALLBACK);
   fclose(fp);
 
   return tree;
@@ -66,28 +66,28 @@ mxml_node_t* search_xml_tree(mxml_node_t *tree, mxml_type_t type, int len, ...)
   }
   va_end(args);
 
-  /* if the requested node's type doesnt match, assume its the child that we want... */ 
-  if (node->type != type) {
-    node=node->child;
-    if (node && node->type != type) node=NULL;
+  /* if the requested node's type doesnt match, assume its the child that we want... */
+  if (mxmlGetType(node) != type) {
+    node=mxmlGetFirstChild(node);
+    if (node && mxmlGetType(node) != type) node=NULL;
   }
-  
+
   return node;
 }
 
 
 const char* xml_whitespace_cb(mxml_node_t *node, int where)
 {
-  const char *name = node->value.element.name;
+  const char *name = mxmlGetElement(node);
 
   if ( !strcmp(name,"AlarmZones") || !strcmp(name,"AlarmPartitions") || strstr(name,"?xml ")==name ) {
     if ( where == MXML_WS_AFTER_OPEN || where == MXML_WS_AFTER_CLOSE ) return("\n");
-  } else if ( !strcmp(name,"Zone") || ~!strcmp(name,"Partition") ) {
+  } else if ( !strcmp(name,"Zone") || !strcmp(name,"Partition") ) {
     if (where == MXML_WS_BEFORE_OPEN || where == MXML_WS_BEFORE_CLOSE) return("  ");
     return("\n");
   } else {
     if (where == MXML_WS_BEFORE_OPEN) return("    ");
-    if (where == MXML_WS_AFTER_OPEN && !node->child) return("\n");
+    if (where == MXML_WS_AFTER_OPEN && !mxmlGetFirstChild(node)) return("\n");
     if (where == MXML_WS_AFTER_CLOSE) return("\n");
   }
 
@@ -121,73 +121,73 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
   configxml=load_xml_file(configfile);
   if (!configxml) return 1;
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","serial","device");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","serial","device");
   if (!node) die("cannot find serial device in configuration");
-  config->serial_device=strdup(node->value.text.string);
+  config->serial_device=strdup(mxmlGetOpaque(node));
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","serial","speed");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","serial","speed");
   if (!node) die("cannot find serial speed in configuration");
-  config->serial_speed=strdup(node->value.text.string);
+  config->serial_speed=strdup(mxmlGetOpaque(node));
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","serial","protocol");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","serial","protocol");
   if (!node) die("cannot find serial protocol in configuration");
-  if (strstr(node->value.text.string,"ascii")) {
+  if (strstr(mxmlGetOpaque(node),"ascii")) {
     config->serial_protocol=NX_PROTOCOL_ASCII;
-  } else if (strstr(node->value.text.string,"binary")) {
+  } else if (strstr(mxmlGetOpaque(node),"binary")) {
     config->serial_protocol=NX_PROTOCOL_BINARY;
   } else {
     die("invalid serial protocol setting in configuration");
   }
-    
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","alarm","partitions");
+
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","alarm","partitions");
   if (!node) die("cannot find alarm partitions in configuration");
-  if (sscanf(node->value.text.string,"%d",&i)==1) config->partitions=i;
+  if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->partitions=i;
   else die("invalid alarm partitions setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","alarm","zones");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","alarm","zones");
   if (!node) die("cannot find alarm zones in configuration");
-  if (sscanf(node->value.text.string,"%d",&i)==1) config->zones=i;
+  if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->zones=i;
   else die("invalid alarm zones setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","alarm","timesync");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","alarm","timesync");
   if (!node) die("cannot find alarm timesync in configuration");
-  if (sscanf(node->value.text.string,"%d",&i)==1) config->timesync=i;
+  if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->timesync=i;
   else die("invalid alarm timesync setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","alarm","statuscheck");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","alarm","statuscheck");
   if (!node) die("cannot find alarm statuscheck in configuration");
-  if (sscanf(node->value.text.string,"%d",&i)==1) config->statuscheck=i;
+  if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->statuscheck=i;
   else die("invalid alarm statuscheck setting");
 
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","shmkey");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","shm","shmkey");
   if (!node) die("cannot find shm shmkey in configuration");
-  if (sscanf(node->value.text.string,"%x",&i)==1) config->shmkey=i;
+  if (sscanf(mxmlGetOpaque(node),"%x",&i)==1) config->shmkey=i;
   else die("invalid shm shmkey setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","shmmode");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","shm","shmmode");
   if (!node) die("cannot find shm shmmode in configuration");
-  if (sscanf(node->value.text.string,"%o",&i)==1) config->shmmode=i;
+  if (sscanf(mxmlGetOpaque(node),"%o",&i)==1) config->shmmode=i;
   else die("invalid shm shmmode setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","shmgroup");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","shm","shmgroup");
   if (node) {
-    if (sscanf(node->value.text.string,"%d",&i)==1) config->shm_gid=i;
-    else if ((gr=getgrnam(node->value.text.string))) {
+    if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->shm_gid=i;
+    else if ((gr=getgrnam(mxmlGetOpaque(node)))) {
       config->shm_gid=gr->gr_gid;
-    } 
+    }
     else die("invalid shm shmgroup setting");
   } else {
     config->shm_gid=-1;
   }
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","shmuser");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","shm","shmuser");
   if (node) {
-    if (sscanf(node->value.text.string,"%d",&i)==1) config->shm_uid=i;
-    else if ((pw=getpwnam(node->value.text.string))) {
+    if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->shm_uid=i;
+    else if ((pw=getpwnam(mxmlGetOpaque(node)))) {
       config->shm_uid=pw->pw_uid;
-    } 
+    }
     else die("invalid shm shmuser setting");
   } else {
     config->shm_uid=-1;
@@ -195,57 +195,57 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
 
 
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msgkey");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","shm","msgkey");
   if (!node) die("cannot find msgkey in configuration");
-  if (sscanf(node->value.text.string,"%x",&i)==1) config->msgkey=i;
+  if (sscanf(mxmlGetOpaque(node),"%x",&i)==1) config->msgkey=i;
   else die("invalid shm msgkey setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msgmode");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","shm","msgmode");
   if (!node) die("cannot find msgmode in configuration");
-  if (sscanf(node->value.text.string,"%o",&i)==1) config->msgmode=i;
+  if (sscanf(mxmlGetOpaque(node),"%o",&i)==1) config->msgmode=i;
   else die("invalid shm msgmode setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msggroup");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","shm","msggroup");
   if (node) {
-    if (sscanf(node->value.text.string,"%d",&i)==1) config->msg_gid=i;
-    else if ((gr=getgrnam(node->value.text.string))) {
+    if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->msg_gid=i;
+    else if ((gr=getgrnam(mxmlGetOpaque(node)))) {
       config->msg_gid=gr->gr_gid;
-    } 
+    }
     else die("invalid shm msggroup setting");
   } else {
     config->msg_gid=-1;
   }
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","shm","msguser");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","shm","msguser");
   if (node) {
-    if (sscanf(node->value.text.string,"%d",&i)==1) config->msg_uid=i;
-    else if ((pw=getpwnam(node->value.text.string))) {
+    if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->msg_uid=i;
+    else if ((pw=getpwnam(mxmlGetOpaque(node)))) {
       config->msg_uid=pw->pw_uid;
-    } 
+    }
     else die("invalid shm shmuser setting");
   } else {
     config->msg_uid=-1;
   }
 
-    
+
 
   config->syslog_mode=0;
-  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","syslog");
-  if (node && sscanf(node->value.text.string,"%d",&i)==1) config->syslog_mode=i;
+  node=search_xml_tree(configxml,MXML_OPAQUE,2,"configuration","syslog");
+  if (node && sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->syslog_mode=i;
 
   config->debug_mode=0;
-  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","log");
-  if (node && sscanf(node->value.text.string,"%d",&i)==1) config->debug_mode=i;
+  node=search_xml_tree(configxml,MXML_OPAQUE,2,"configuration","log");
+  if (node && sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->debug_mode=i;
 
 
-  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","directory");
+  node=search_xml_tree(configxml,MXML_OPAQUE,2,"configuration","directory");
   if (!node) die("cannot find directory element in configuration");
-  dir=node->value.text.string;
+  dir=mxmlGetOpaque(node);
   if (strlen(dir) < 1) die("directory element empty in configuration");
 
-  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","logfile");
+  node=search_xml_tree(configxml,MXML_OPAQUE,2,"configuration","logfile");
   if (node) {
-    EXPAND_FILENAME(tmpstr,dir,node->value.text.string);
+    EXPAND_FILENAME(tmpstr,dir,mxmlGetOpaque(node));
     config->log_file=strdup(tmpstr);
     if (config->debug_mode >= 0 && logtest) {
       fp=fopen(config->log_file,"a");
@@ -254,43 +254,43 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
     }
   }
 
-  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","statusfile");
+  node=search_xml_tree(configxml,MXML_OPAQUE,2,"configuration","statusfile");
   if (node) {
-    EXPAND_FILENAME(tmpstr,dir,node->value.text.string);
+    EXPAND_FILENAME(tmpstr,dir,mxmlGetOpaque(node));
     config->status_file=strdup(tmpstr);
   }
 
-  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","savestatus");
+  node=search_xml_tree(configxml,MXML_OPAQUE,2,"configuration","savestatus");
   if (node) {
-    if (sscanf(node->value.text.string,"%d",&i)==1) config->status_save_interval=i;
+    if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->status_save_interval=i;
     else die("invalid savestatus setting value");
   }
 
 
-  node=search_xml_tree(configxml,MXML_TEXT,2,"configuration","alarmprogram");
+  node=search_xml_tree(configxml,MXML_OPAQUE,2,"configuration","alarmprogram");
   if (node) {
-    EXPAND_FILENAME(tmpstr,dir,node->value.text.string);
+    EXPAND_FILENAME(tmpstr,dir,mxmlGetOpaque(node));
     config->alarm_program=strdup(tmpstr);
   }
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","logentry");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","triggers","logentry");
   if (!node) die("cannot find 'logentry' inside 'triggers' section in configuration");
-  if (sscanf(node->value.text.string,"%d",&i)==1) config->trigger_log=i;
+  if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->trigger_log=i;
   else die("invalid 'triggers::logentry' setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","partitionstatus");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","triggers","partitionstatus");
   if (!node) die("cannot find 'partitionstatus' inside 'triggers' section in configuration");
-  if (sscanf(node->value.text.string,"%d",&i)==1) config->trigger_partition=i;
+  if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->trigger_partition=i;
   else die("invalid 'triggers::partitionstatus' setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","zonestatus");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","triggers","zonestatus");
   if (!node) die("cannot find 'zonestatus' inside 'triggers' section in configuration");
-  if (sscanf(node->value.text.string,"%d",&i)==1) config->trigger_zone=i;
+  if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->trigger_zone=i;
   else die("invalid 'triggers::zonestatus' setting");
 
-  node=search_xml_tree(configxml,MXML_TEXT,3,"configuration","triggers","maxprocesses");
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","triggers","maxprocesses");
   if (!node) die("cannot find 'maxprocesses' inside 'triggers' section in configuration");
-  if (sscanf(node->value.text.string,"%d",&i)==1) config->max_triggers=i;
+  if (sscanf(mxmlGetOpaque(node),"%d",&i)==1) config->max_triggers=i;
   else die("invalid 'zonestatus' setting");
 
 
@@ -326,7 +326,7 @@ int save_status_xml(const char *filename, nx_system_status_t *astat)
 
       e=mxmlNewElement(p,"LastChange");
       mxmlElementSetAttrf(e,"time","%lu",(unsigned long)pt->last_updated);
-      
+
       part_count++;
     }
   }
@@ -401,10 +401,10 @@ int load_status_xml(const char *filename, nx_system_status_t *astat)
   node=zones;
   zn=NULL;
   while ((node=mxmlWalkNext(node,zones,MXML_DESCEND))) {
-    const char *nname = node->value.element.name;
+    const char *nname = mxmlGetElement(node);
     const char *id_s, *name_s;
 
-    if (node->type != MXML_ELEMENT) continue;
+    if (mxmlGetType(node) != MXML_ELEMENT) continue;
 
     //printf("node: %s\n",(nname != NULL?nname:"NULL"));
 
@@ -448,9 +448,9 @@ int load_status_xml(const char *filename, nx_system_status_t *astat)
   node=partitions;
   pt=NULL;
   while ((node=mxmlWalkNext(node,partitions,MXML_DESCEND))) {
-    const char *nname = node->value.element.name;
-    
-    if (node->type != MXML_ELEMENT) continue;
+    const char *nname = mxmlGetElement(node);
+
+    if (mxmlGetType(node) != MXML_ELEMENT) continue;
 
     //printf("node: %s\n",(nname != NULL?nname:"NULL"));
 
@@ -481,7 +481,7 @@ int load_status_xml(const char *filename, nx_system_status_t *astat)
 
 
   }
-  
+
 
   mxmlDelete(xml);
   return 0;
