@@ -68,7 +68,7 @@ DISTNAME  = $(PKGNAME)-$(Version)
 PROGS = $(PKGNAME) nxstat nxcmd
 COMMON_OBJS = configuration.o misc.o @GNUGETOPT@ @STRLFUNCS@
 NXSTAT_OBJS = nxstat.o nx-584.o $(COMMON_OBJS)
-NXCMD_OBJS = nxcmd.o $(COMMON_OBJS)
+NXCMD_OBJS = nxcmd.o nx-584.o $(COMMON_OBJS)
 OBJS = nx-584.o probe.o process.o ipc.o trigger.o $(PKGNAME).o $(COMMON_OBJS)
 
 all:	$(PROGS)

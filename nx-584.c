@@ -1,7 +1,7 @@
 /* nx-584.c
  *
  * Library of functions to implement NX-584 Protocol.
- * 
+ *
  * Copyright (C) 2009-2021 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
@@ -16,8 +16,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
- * Boston, MA  02110-1301, USA. 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
  *
  */
 
@@ -46,7 +46,7 @@ const nx_panel_model_t nx_panel_models[] = {
    {  11, "NX-6-V2",  16, 2 },
    {  12, "NX-8-V2",  48, 8 },
    { 100, "CS575",    48, 4 },
-   {  -1, NULL,        0, 0 }, 
+   {  -1, NULL,        0, 0 },
 };
 
 const nx_log_event_type_t nx_log_event_types[] = {
@@ -119,7 +119,7 @@ const nx_log_event_type_t nx_log_event_types[] = {
 
 
 
-int fletcher_checksum(const void *buf, unsigned int len, 
+int fletcher_checksum(const void *buf, unsigned int len,
 		       unsigned char *sum1, unsigned char *sum2)
 {
   int i;
@@ -137,7 +137,7 @@ int fletcher_checksum(const void *buf, unsigned int len,
     s2+=s1;
     if (s2 == 255) s2=0;
   }
- 
+
   *sum1=s1;
   *sum2=s2;
   return 0;
@@ -151,10 +151,10 @@ const char* nx_timestampstr(time_t t)
 
   *str=0;
   localtime_r(&t,&tm);
-  snprintf(str,sizeof(str)-1,"%04d-%02d-%02d %02d:%02d:%02d",
-           tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday,
-           tm.tm_hour,tm.tm_min,tm.tm_sec);
-  str[sizeof(str)-1]=0;
+  snprintf(str, sizeof(str), "%04d-%02d-%02d %02d:%02d:%02d",
+	  (tm.tm_year+1900) % 10000, tm.tm_mon+1, tm.tm_mday,
+           tm.tm_hour, tm.tm_min, tm.tm_sec);
+  str[sizeof(str) - 1]=0;
   return str;
 }
 
@@ -180,7 +180,7 @@ int nx_log_event_partinfo(uchar eventnum)
   int i=0;
 
   while(nx_log_event_types[i].description) {
-    if (nx_log_event_types[i].type == (eventnum & NX_EVENT_TYPE_MASK)) 
+    if (nx_log_event_types[i].type == (eventnum & NX_EVENT_TYPE_MASK))
       return nx_log_event_types[i].partition;
     i++;
   }
@@ -194,7 +194,7 @@ char nx_log_event_valtype(uchar eventnum)
   int i=0;
 
   while(nx_log_event_types[i].description) {
-    if (nx_log_event_types[i].type == (eventnum & NX_EVENT_TYPE_MASK)) 
+    if (nx_log_event_types[i].type == (eventnum & NX_EVENT_TYPE_MASK))
       return nx_log_event_types[i].valtype;
     i++;
   }
@@ -229,7 +229,7 @@ const char* nx_log_event_str(const nx_log_event_t *event)
     if (nx_log_event_types[ev].partition) snprintf(tmp2,sizeof(tmp2)-1,", Partition=%d",event->part+1);
     else tmp2[0]=0;
     tmp2[sizeof(tmp2)-1]=0;
-    
+
     snprintf(str,sizeof(str)-1,"%slog entry %d/%d: %02d/%02d %02d:%02d %s%s%s",
 	     (NX_IS_NONREPORTING_EVENT(event->type)?"non-reporting ":""),
 	     event->no+1,event->logsize,
@@ -242,7 +242,7 @@ const char* nx_log_event_str(const nx_log_event_t *event)
 	     event->month,event->day,event->hour,event->min,
 	     (event->type & NX_EVENT_TYPE_MASK),event->num,event->part);
   }
-  
+
   str[sizeof(str)-1]=0;
   return str;
 }
@@ -263,11 +263,11 @@ int nx_read_packet(int fd, nxmsg_t *msg, int protocol)
 
 
 
-  if (protocol == NX_PROTOCOL_ASCII) { 
-    startchar=0x0a; 
+  if (protocol == NX_PROTOCOL_ASCII) {
+    startchar=0x0a;
     multiplier=2;
   } else {
-    startchar=0x7e; 
+    startchar=0x7e;
     multiplier=1;
   }
 
@@ -276,14 +276,14 @@ int nx_read_packet(int fd, nxmsg_t *msg, int protocol)
     logmsg(0,"nx_read_packet(): invalid arguments");
     exit(1);
   }
-  
+
   if (len < 0) {
     /* look for start of message */
     do {
-      do { 
+      do {
 	r = read(fd,tmp,1);
       } while (r == -1 && errno==EINTR);
-      
+
       if (r < 0) {
 	if (errno == EAGAIN) return 0;
 	fprintf(stderr,"nx_read_packet(): read() failed (%d) while looking start of message\n",errno);
@@ -304,14 +304,14 @@ int nx_read_packet(int fd, nxmsg_t *msg, int protocol)
       do {
 	r = read(fd,&tmp[len],(multiplier-len));
       } while (r == -1 && errno==EINTR);
-      
+
       if (r < 0) {
 	if (errno == EAGAIN) return 0;
 	fprintf(stderr,"nx_read_packet(): read() failed (%d) while reading message length\n",errno);
 	logmsg(0,"nx_read_packet(): read() failed (%d) while reading message length",errno);
 	exit(1);
       }
-      
+
       len+=r;
     }
   }
@@ -341,7 +341,7 @@ int nx_read_packet(int fd, nxmsg_t *msg, int protocol)
       do {
 	r = read(fd,&tmp[len],(rawlen-len));
       } while (r == -1 && errno==EINTR);
-      
+
       if (r < 0) {
 	if (errno == EAGAIN) return 0;
 	fprintf(stderr,"nx_read_packet(): read() failed (%d) while reading message data\n",errno);
@@ -363,7 +363,7 @@ int nx_read_packet(int fd, nxmsg_t *msg, int protocol)
     }
   }
 
-  
+
   /* decode message */
 
   msg->len=msglen;
@@ -396,20 +396,20 @@ int nx_read_packet(int fd, nxmsg_t *msg, int protocol)
       } else {
 	val=*tmpptr;
       }
-    } 
+    }
 
-    if (i==1) { 
+    if (i==1) {
       msg->msgnum=val;
     } else if (i==msglen+1) {
       msg->sum1=val;
     } else if (i==msglen+2) {
       msg->sum2=val;
-    } else { 
+    } else {
       msg->msg[i-2]=val;
     }
     checksumbuf[i]=val;
 
-    i++; 
+    i++;
     tmpptr++;
   }
 
@@ -461,7 +461,7 @@ int nx_write_packet(int fd, nxmsg_t *msg, int protocol)
   unsigned char *c = tmp;
   int i,w;
 
-  
+
   if (protocol == NX_PROTOCOL_ASCII) {
     *p++=0x0a;
     snprintf((char*)p,5,"%02X%02X",msg->len,msg->msgnum);
@@ -527,7 +527,7 @@ int nx_receive_message(int fd, int protocol, nxmsg_t *msg, int timeout)
   int ret;
   time_t etime,extratime;
   nxmsg_t msgout;
-  
+
   if (fd < 0 || !msg) return -3;
 
   etime=time(NULL)+timeout;
@@ -557,7 +557,7 @@ int nx_receive_message(int fd, int protocol, nxmsg_t *msg, int timeout)
 	  logmsg(3,"nx_receive_message(): sending ACK as requested");
 	  msgout.msgnum=NX_POSITIVE_ACK;
 	  msgout.len=1;
-	  if (nx_write_packet(fd,&msgout,protocol) < 0) 
+	  if (nx_write_packet(fd,&msgout,protocol) < 0)
 	    logmsg(3,"nx_receive_message(): error sending ACK");
 	}
 	return 1;
@@ -610,7 +610,7 @@ int nx_send_message(int fd, int protocol, nxmsg_t *msg, int timeout, int retry, 
 	  logmsg(3,"nx_send_message(): reply received %02x (%02x)",rnum & NX_MSG_MASK,replymsg->msgnum);
 	  return 1;
 	} else {
-	  logmsg(3,"nx_send_message(): wrong reply %02x (%02x) received",rnum & NX_MSG_MASK,replymsg->msgnum); 
+	  logmsg(3,"nx_send_message(): wrong reply %02x (%02x) received",rnum & NX_MSG_MASK,replymsg->msgnum);
 	}
       }
       t--;
@@ -628,7 +628,7 @@ int nx_send_message(int fd, int protocol, nxmsg_t *msg, int timeout, int retry, 
 
 #define DEBUG_PRINT_HEADER(name,msg) fprintf(fp,"%s: %s (MSG=0x%02X, ACK=%d):\n",\
 					     nx_timestampstr(msg->r_time),name,msg->msgnum&NX_MSG_MASK,\
-					     (msg->msgnum&NX_MSG_ACK_FLAG?1:0))    
+					     (msg->msgnum&NX_MSG_ACK_FLAG?1:0))
 #define DEBUG_PRINT_STR(name,val)  fprintf(fp,"\t%42s: %s\n",name,val)
 #define DEBUG_PRINT_UCHAR(name,val)  fprintf(fp,"\t%42s: %u\n",name,val)
 #define DEBUG_PRINT_DATA(name,val)  fprintf(fp,"\t%42s: %03u 0x%02x (%02u,%02u)\n",name,val,val,(val&0x0f),((val&0xf0)>>4))
@@ -674,7 +674,7 @@ void nx_print_msg(FILE *fp, nxmsg_t *msg)
   case NX_INT_CONFIG_MSG:
     memcpy(tmp,&msg->msg[0],4);
     tmp[4]=0;
-    DEBUG_PRINT_HEADER("INTERFACE CONFIGURATION MESSAGE",msg);    
+    DEBUG_PRINT_HEADER("INTERFACE CONFIGURATION MESSAGE",msg);
 
     DEBUG_PRINT_STR("Firmware version",tmp);
 
@@ -737,7 +737,7 @@ void nx_print_msg(FILE *fp, nxmsg_t *msg)
     DEBUG_PRINT_PMASK("Partition mask",msg->msg[1]);
 
     fprintf(fp,"\tZone type flags:\n");
-    
+
     DEBUG_PRINT_CFLAG("Fire",msg->msg[2] & 0x01);
     DEBUG_PRINT_CFLAG("24 Hour",msg->msg[2] & 0x02);
     DEBUG_PRINT_CFLAG("Key-switch",msg->msg[2] & 0x04);
@@ -764,7 +764,7 @@ void nx_print_msg(FILE *fp, nxmsg_t *msg)
     DEBUG_PRINT_CFLAG("Swinger shutdown",msg->msg[4] & 0x20);
     DEBUG_PRINT_CFLAG("Restorable",msg->msg[4] & 0x40);
     DEBUG_PRINT_CFLAG("Listen in",msg->msg[4] & 0x80);
-      
+
     fprintf(fp,"\tZone condition flags:\n");
     DEBUG_PRINT_FLAG("Faulted (or delayed trip)",msg->msg[5] & 0x01);
     DEBUG_PRINT_FLAG("Tampered",msg->msg[5] & 0x02);
@@ -970,10 +970,10 @@ void nx_print_msg(FILE *fp, nxmsg_t *msg)
     DEBUG_PRINT_DATA("Data byte (8)",msg->msg[11]);
     break;
 
-  case NX_USER_INFO_REPLY: 
+  case NX_USER_INFO_REPLY:
     DEBUG_PRINT_HEADER("USER INFORMATION REPLY",msg);
     DEBUG_PRINT_UCHAR("User number",msg->msg[0]);
-    fprintf(fp,"\t%42s: %d %d %d %d (%d %d)\n","PIN", 
+    fprintf(fp,"\t%42s: %d %d %d %d (%d %d)\n","PIN",
 	    msg->msg[1]&0x0f,((msg->msg[1])>>4)&0x0f,
 	    msg->msg[2]&0x0f,((msg->msg[2])>>4)&0x0f,
 	    msg->msg[3]&0x0f,((msg->msg[3])>>4)&0x0f);

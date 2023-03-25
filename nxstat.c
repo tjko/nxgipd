@@ -1,7 +1,7 @@
 /* nxstat.c
  *
- * Tool to display alarm status by querying nxgipd daemon. 
- * 
+ * Tool to display alarm status by querying nxgipd daemon.
+ *
  * Copyright (C) 2009-2016 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
@@ -16,8 +16,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
- * Boston, MA  02110-1301, USA. 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
  *
  * $Id$
  */
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
     case 'a':
       display_all=1;
       break;
-      
+
     case 'c':
       config_file=strdup(optarg);
       break;
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
     case 'r':
       reverse_sort_order=1;
       break;
-      
+
     case 's':
       system_status=1;
       break;
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
       fprintf(stderr,"%s v%s (%s)  %s\nCopyright (C) 2009-2015 Timo Kokkonen. All Rights Reserved.\n",
 	      program_name,VERSION,BUILDDATE,HOST_TYPE);
       exit(0);
-      
+
     case 'l':
       if (optarg && sscanf(optarg,"%d",&log_mode)==1) {
 	if (log_mode < 0) log_mode=0;
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
   }
 
 
-  if (verbose_mode) 
+  if (verbose_mode)
     printf("Loading configuration...\n");
 
   if (load_config(config_file,config,0))
@@ -227,20 +227,20 @@ int main(int argc, char **argv)
 
   shmid = shmget(config->shmkey,sizeof(nx_shm_t),0);
   if (shmid < 0) {
-    if (errno==EINVAL) 
+    if (errno==EINVAL)
       die("version mismatch with daemon version (shared memory segment wrong size)");
     if (errno==ENOENT)
       die("cannot find share memory segment (server not running?)");
     die("shmget() failed: %s (%d)\n",strerror(errno),errno);
   }
   shm = shmat(shmid,NULL,SHM_RDONLY);
-  if (shm == (void*)-1)  
+  if (shm == (void*)-1)
     die("shmat() failed: %d (%s)\n",errno,strerror(errno));
   istatus=&shm->intstatus;
   astat=&shm->alarmstatus;
 
   if (strcmp(shm->shmversion, SHMVERSION))
-    die("version mismatch with daemon (shared memory) version: %s vs %s", 
+    die("version mismatch with daemon (shared memory) version: %s vs %s",
 	SHMVERSION, shm->shmversion);
 
 
@@ -251,7 +251,7 @@ int main(int argc, char **argv)
     printf("    Server PID: %d\n",shm->pid);
     printf("Server Version: %s\n",shm->daemon_version);
     printf("    shmversion: %s\n",shm->shmversion);
-    printf("  Last Updated: %s\n",timestampstr(shm->last_updated));
+    printf("  Last Updated: %s\n",nx_timestampstr(shm->last_updated));
     printf("\n");
   }
   if (kill(shm->pid,0) < 0 && errno != EPERM)
@@ -261,14 +261,14 @@ int main(int argc, char **argv)
   if (shm->last_updated + (5*60) < time(NULL)) {
     printf("WARNING: server process appears have hung!\n");
   }
-    
+
 
 
   /* check active partitions and zone... */
 
-  for (i=0;i<astat->last_partition;i++) { 
+  for (i=0;i<astat->last_partition;i++) {
     if (astat->partitions[i].valid) {
-      apart++; 
+      apart++;
       if (astat->partitions[i].last_updated > lastparttime)
 	lastparttime=astat->partitions[i].last_updated;
     }
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
     PRINT_SUP_FLAG("Primary Keypad Function (wo/PIN)",c[3],0x20);
     PRINT_SUP_FLAG("Secondary Keypad Function",c[3],0x40);
     PRINT_SUP_FLAG("Zone Bypass Toggle",c[3],0x80);
-    
+
     if (!csv_mode)
       printf("Transition Messages:\n");
 
@@ -341,7 +341,7 @@ int main(int argc, char **argv)
       printf("\n");
 
     return 0;
-  } 
+  }
 
   /* display (detailed) system status */
   if (system_status) {
@@ -462,7 +462,7 @@ int main(int argc, char **argv)
     } else {
       printf("\n");
       printf(" %40s: %d\n","Last User",p->last_user);
-    } 
+    }
 
     return 0;
   }
@@ -478,11 +478,11 @@ int main(int argc, char **argv)
     if (csv_mode) {
       printf("zone_status_flag,status\n");
       printf("Zone Name,%s\n",z->name);
-      printf("Last updated,%s\n",(z->last_updated > 0 ?timestampstr(z->last_updated):"n/a"));
+      printf("Last updated,%s\n",(z->last_updated > 0 ?nx_timestampstr(z->last_updated):"n/a"));
     } else {
       printf("Zone Status Flags:\n        Zone: %d\n",zone_info);
       printf("   Zone Name: %s\n",z->name);
-      printf("Last updated: %s\n",(z->last_updated > 0 ?timestampstr(z->last_updated):"n/a"));
+      printf("Last updated: %s\n",(z->last_updated > 0 ?nx_timestampstr(z->last_updated):"n/a"));
     }
 
     //printf("flags: %02x %02x %02x\n",z->type_flags[0],z->type_flags[1],z->type_flags[2]);
@@ -537,8 +537,8 @@ int main(int argc, char **argv)
     for (i=p-log_mode+1;i<=p;i++) {
       int pos = i;
 
-      if (pos < 0) 
-	pos=size+pos; 
+      if (pos < 0)
+	pos=size+pos;
       if ((astat->log[pos].msgno & NX_MSG_MASK ) == NX_LOG_EVENT_MSG) {
 	  nx_log_event_t *l = &astat->log[pos];
 	s=nx_log_event_str(l);
@@ -590,7 +590,7 @@ int main(int argc, char **argv)
     printf("Part  Ready Armed  Stay Instant Chime  Fire Delay Alarm Sound\n");
     printf("----  ----- -----  ---- ------- -----  ---- ----- ----- ---------\n");
   } else {
-    printf("system,active_partitions,fw_version,active_zones,panel_model,phone_in_use,ac_power," 
+    printf("system,active_partitions,fw_version,active_zones,panel_model,phone_in_use,ac_power,"
 	   "tamper,battery,phone,fuse,communications,ground\n");
     printf("system,%d,%s,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
 	   apart,istatus->version,
@@ -607,12 +607,12 @@ int main(int argc, char **argv)
     printf("\n");
     printf("partition,num,ready,armed,stay,instant,chime,fire,delay,alarm,sound\n");
   }
-  
+
   for (i=0;i<astat->last_partition;i++) {
     nx_partition_status_t *p = &astat->partitions[i];
 
     if (!p->valid) continue;
-    
+
     printf((csv_mode ? "partition,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s\n":
 	               "%-4d  %-5s %-5s  %-4s %-7s %-5s  %-4s %-5s %-5s %-5s\n"),
 	   i+1,
@@ -634,12 +634,12 @@ int main(int argc, char **argv)
   now=time(NULL);
 
 
-  if (csv_mode && zones_mode > 0) 
+  if (csv_mode && zones_mode > 0)
     zones_mode=2;
-  
+
 
   for(i=0;i<azones;i++) {
-    if (reverse_sort_order) 
+    if (reverse_sort_order)
       zonemap[(azones-1)-i]=&astat->zones[i];
     else
       zonemap[i]=&astat->zones[i];
@@ -656,7 +656,7 @@ int main(int argc, char **argv)
     int rows = (azones/cols)+(azones%cols>0?1:0);
 
     printf("Zones:\n");
-    
+
     for (i=0;i<azones;i++) {
       z=(i%3)*rows+(i/3);
       if (z < azones) {
@@ -702,7 +702,7 @@ int main(int argc, char **argv)
 	       zn->name,
 	       (zn->bypass?"Bypassed":"Active"),
 	       (zn->fault?"Fault":(zn->trouble?"Trouble":"OK")),
-	       (zn->last_tripped > 0 ? timestampstr(zn->last_tripped):"n/a"),
+	       (zn->last_tripped > 0 ? nx_timestampstr(zn->last_tripped):"n/a"),
 	       tmp
 	       );
     }
@@ -717,27 +717,26 @@ int main(int argc, char **argv)
 
   if (astat->zones[lastzone].last_updated > shm->daemon_started) {
     printf("\n Last zone tripped: %s (%s ago) [%s]\n",
-	   timestampstr(astat->zones[lastzone].last_updated),
+	   nx_timestampstr(astat->zones[lastzone].last_updated),
 	   timedeltastr(now - astat->zones[lastzone].last_updated),
 	   astat->zones[lastzone].name);
   } else{
     printf("\n Last zone tripped: n/a\n");
   }
   printf("Last status change: %s (%s ago)\n",
-	 timestampstr(lastparttime),
+	 nx_timestampstr(lastparttime),
 	 timedeltastr(now - lastparttime)
 	 );
 
 
   if (verbose_mode) {
     printf("    Daemon started: %s (%s ago)\n",
-	   timestampstr(shm->daemon_started),
+	   nx_timestampstr(shm->daemon_started),
 	   timedeltastr(now - shm->daemon_started));
-    printf(" Last status check: %s\n",timestampstr(astat->last_statuscheck));
-    printf("   Last clock sync: %s\n",timestampstr(astat->last_timesync));
+    printf(" Last status check: %s\n",nx_timestampstr(astat->last_statuscheck));
+    printf("   Last clock sync: %s\n",nx_timestampstr(astat->last_timesync));
   }
 
 
   return 0;
 }
-

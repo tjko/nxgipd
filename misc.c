@@ -1,6 +1,6 @@
 /* misc.c - miscellaneous functions used by nxgipd
  *
- * 
+ *
  * Copyright (C) 2009-2015 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
@@ -15,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
- * Boston, MA  02110-1301, USA. 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
  *
  * $Id$
  */
@@ -63,21 +63,6 @@ void warn(char *format, ...)
 
 
 
-const char* timestampstr(time_t t)
-{
-  static char str[32];
-  struct tm tm;
-
-  *str=0;
-  localtime_r(&t,&tm);
-  snprintf(str,sizeof(str)-1,"%04d-%02d-%02d %02d:%02d:%02d",
-           tm.tm_year+1900,tm.tm_mon+1,tm.tm_mday,
-           tm.tm_hour,tm.tm_min,tm.tm_sec);
-  str[sizeof(str)-1]=0;
-  return str;
-}
-
-
 const char *timedeltastr(time_t delta)
 {
   static char buf[256];
@@ -88,7 +73,7 @@ const char *timedeltastr(time_t delta)
   }
   else if (delta < 60*60){
     snprintf(buf,sizeof(buf)-1,"%02dm%02ds",(d/60),(d%60));
-  } 
+  }
   else if (delta < 60*60*24) {
     snprintf(buf,sizeof(buf)-1,"%02dh%02dm",(d/(60*60)),(d%(60*60))/60);
   }
@@ -127,7 +112,7 @@ void logmsg(int priority, char *format, ...)
   if (config->log_file && priority <= config->debug_mode) {
     fp=fopen(config->log_file,"a");
     if (fp) {
-      fprintf(fp,"%s: %s\n",timestampstr(time(NULL)),buf);
+      fprintf(fp,"%s: %s\n",nx_timestampstr(time(NULL)),buf);
       fclose(fp);
     }
   }
@@ -138,7 +123,7 @@ void set_message_reply(nx_ipc_msg_reply_t *reply, const nx_ipc_msg_t *msg, int r
 {
   va_list args;
   char buf[256];
-  
+
   va_start(args,format);
   vsnprintf(buf,sizeof(buf),format,args);
   va_end(args);
@@ -194,14 +179,14 @@ int openserialdevice(const char *device, const char *speed)
   case 115200:
     spd=B115200;
     break;
-    
+
   default:
     spd=B9600;
     warn("invalid serial port speed setting (%d) falling back to default",
 	 speed);
   }
 
-  cfmakeraw(&t); 
+  cfmakeraw(&t);
   cfsetspeed(&t,spd);
   t.c_cflag |= CLOCAL;
 

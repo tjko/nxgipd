@@ -110,6 +110,7 @@ SERIAL INTERFACE CONFIGURATION
 
 HISTORY
 	v1.1.1beta
+	        - updated to work with Mini-XML v3.x
 		- new -r option to nxstat command
 		- fix to binary protocol support
 		- minor bug fixes	

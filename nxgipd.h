@@ -260,7 +260,6 @@ void warn(char *format, ...);
 void logmsg(int priority, char *format, ...);
 void set_message_reply(nx_ipc_msg_reply_t *reply, const nx_ipc_msg_t *msg, int result, const char *format, ...);
 int openserialdevice(const char *device, const char *speed);
-const char* timestampstr(time_t t);
 const char *timedeltastr(time_t delta);
 
 /* configuration.c */

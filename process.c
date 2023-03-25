@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
- * Boston, MA  02110-1301, USA. 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
  *
  * $Id$
  */
@@ -60,7 +60,7 @@
 
 
 
-void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_status_t *astat, nx_interface_status_t *istatus) 
+void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_status_t *astat, nx_interface_status_t *istatus)
 {
   unsigned char msgnum;
   int i;
@@ -140,7 +140,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	    if (change)
 	      zone->last_tripped=msg->r_time;
 
-	    if (config->trigger_enable && 
+	    if (config->trigger_enable &&
 		( (change && config->trigger_zone > 0) ||
 		  (config->trigger_zone > 1) ) )
 	      run_zone_trigger(zonenum+1,zone->name,fault,bypass,trouble,tamper,astat->armed,tmp);
@@ -177,7 +177,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  CHECK_STATUS_CHANGE(bypass,zone->bypass,change2,tmp,"Bypass enabled","Bypass disabled");
 	  CHECK_STATUS_CHANGE(trouble,zone->trouble,change,tmp,"Trouble","Trouble Clear");
 	  CHECK_STATUS_CHANGE(alarm_mem,zone->alarm_mem,change2,tmp,"Alarm Memory","Alarm Memory Clear");
-	  
+
 	  if (change || change2) {
 	    zone->last_updated=msg->r_time;
 	    if (!init_mode) {
@@ -186,11 +186,11 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 		     zonenum+1,
 		     zone->name,
 		     tmp);
-	      
+
 	      if (change)
 		zone->last_tripped=msg->r_time;
 
-	      if (config->trigger_enable && 
+	      if (config->trigger_enable &&
 		  ( (change && config->trigger_zone > 0) ||
 		    (config->trigger_zone > 1) ) )
 		run_zone_trigger(zonenum+1,zone->name,fault,bypass,trouble,zone->tamper,astat->armed,tmp);
@@ -283,7 +283,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	/* keyswitch armed */
 	CHECK_STATUS_CHANGE((msg->msg[7]&0x40?1:0),part->keyswitch_armed,change,tmp,"Keyswitch Armed","Keyswitch Unarmed");
 
-	
+
 
 	/* last user */
 	if (msg->msg[5] != part->last_user) {
@@ -291,9 +291,9 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  part->last_user=msg->msg[5];
 	  change++;
 	  if (tmp[0]) strlcat(tmp,", ",sizeof(tmp));
-	  if (part->last_user == NX_NO_USER) 
+	  if (part->last_user == NX_NO_USER)
 	    snprintf(tstr,sizeof(tstr),"Last User = <None>");
-	  else 
+	  else
 	    snprintf(tstr,sizeof(tstr),"Last User = %03u",part->last_user);
 	  strlcat(tmp,tstr,sizeof(tmp));
 	}
@@ -303,9 +303,9 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  if (!init_mode) {
 	    logmsg(0,"Partition %d status change: %s",partnum+1,tmp);
 
-	    if (config->trigger_enable && 
+	    if (config->trigger_enable &&
 		( (change && config->trigger_zone > 0) ||
-		  (change2 && config->trigger_zone > 1) ) 
+		  (change2 && config->trigger_zone > 1) )
 		) {
 	      run_partition_trigger(partnum+1,tmp,part->armed,part->ready,
 				    part->stay_mode,part->chime_mode,part->entry_delay,
@@ -334,39 +334,39 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	unsigned char s = msg->msg[i];
 	unsigned char v = (s & 0x01 ? 1:0);
 	unsigned char t;
-	nx_partition_status_t *part = &astat->partitions[i]; 
+	nx_partition_status_t *part = &astat->partitions[i];
 	int change = 0;
 	int change2 = 0;
-	
+
 	if (part->valid != v) {
 	  part->valid=v;
 	  logmsg(1,"Partition %d %s",i+1,(v ? "Active":"Disabled"));
 	}
-	
+
 	if (part->valid > 0) {
 	  tmp[0]=0;
-	  
+
 	  /* armed */
 	  t=(s & 0x04 ? 1:0);
 	  if (t) armed_count++;
 	  CHECK_STATUS_CHANGE(t,part->armed,change,tmp,"Armed","Not Armed");
-	  
+
 	  /* ready */
 	  t=(s & 0x02 ? 1:0);
 	  CHECK_STATUS_CHANGE(t,part->ready,change2,tmp,"Ready","Not Ready");
-	  
+
 	  /* stay mode */
 	  t=(s & 0x08 ? 1:0);
 	  CHECK_STATUS_CHANGE(t,part->stay_mode,change,tmp,"Stay Mode On","Stay Mode Off");
-	  
+
 	  /* chime mode */
 	  t=(s & 0x10 ? 1:0);
 	  CHECK_STATUS_CHANGE(t,part->chime_mode,change,tmp,"Chime Mode On","Chime Mode Off");
-	  
+
 	  /* entry delay */
 	  t=(s & 0x20 ? 1:0);
 	  CHECK_STATUS_CHANGE(t,part->entry_delay,change,tmp,"Entry Delay Start","Entry Delay End");
-	  
+
 	  /* exit delay */
 	  t=(s & 0x40 ? 1:0);
 	  CHECK_STATUS_CHANGE(t,part->exit_delay,change,tmp,"Exit Delay Start","Exit Delay End");
@@ -375,15 +375,15 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  t=(s & 0x80 ? 1:0);
 	  CHECK_STATUS_CHANGE(t,part->prev_alarm,change,tmp,"Previous Alarm","Previous Alarm Cleared");
 
-	  
+
 	  if (change || change2) {
 	    part->last_updated=msg->r_time;
 	    if (!init_mode) {
 	      logmsg(0,"Partition %d status change: %s",i+1,tmp);
 
-	      if (config->trigger_enable && 
+	      if (config->trigger_enable &&
 		  ( (change && config->trigger_zone > 0) ||
-		    (change2 && config->trigger_zone > 1) ) 
+		    (change2 && config->trigger_zone > 1) )
 		  ) {
 		run_partition_trigger(i+1,tmp,part->armed,part->ready,
 				      part->stay_mode,part->chime_mode,part->entry_delay,
@@ -467,7 +467,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       LOG_STATUS_CHANGE(astat->exp_aux_overcurrent,(msg->msg[3]&0x10 ? 1:0),change,"Expander aux ouput overcurrent","Expander aux output current normal");
       LOG_STATUS_CHANGE(astat->aux_com_channel_fail,(msg->msg[3]&0x20 ? 1:0),change,"Aux communication channel FAILURE","Aux communication channel OK");
       LOG_STATUS_CHANGE(astat->exp_bell_fault,(msg->msg[3]&0x40 ? 1:0),change,"Expander bell fault","Expander bell OK");
-      
+
       LOG_STATUS_CHANGE(astat->sixdigitpin,(msg->msg[4]&0x01 ? 1:0),change,"6 Digit PIN enabled","4 Digit PIN enabled");
       LOG_STATUS_CHANGE(astat->prog_token_inuse,(msg->msg[4]&0x02 ? 1:0),change,"GO TO PROGRAM code entered",NULL);
       LOG_STATUS_CHANGE(astat->pin_local_dl,(msg->msg[4]&0x04 ? 1:0),change,"PIN required for local download","PIN not required for local download");
@@ -485,7 +485,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       LOG_STATUS_CHANGE(astat->smoke_power_reset,(msg->msg[5]&0x20 ? 1:0),change,"Smoke detector power reset",NULL);
       LOG_STATUS_CHANGE(astat->line_power_50hz,(msg->msg[5]&0x40 ? 1:0),change,"50 Hz line power detected","60 Hz line power detected");
       LOG_STATUS_CHANGE(astat->high_voltage_charge,(msg->msg[5]&0x80 ? 1:0),change,"Timing a high voltage battery charge start","Timing a high voltage battery charge end");
-      
+
       LOG_STATUS_CHANGE(astat->comm_since_autotest,(msg->msg[6]&0x01 ? 1:0),change,"Communication since last autotest","No Communication since last autotest");
       LOG_STATUS_CHANGE(astat->powerup_delay,(msg->msg[6]&0x02 ? 1:0),change,"Power up delay in progress","Power up delay end");
       LOG_STATUS_CHANGE(astat->walktest_mode,(msg->msg[6]&0x04 ? 1:0),change,"Walk test mode ON","Walk test mode OFF");
@@ -494,9 +494,9 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       LOG_STATUS_CHANGE(astat->testfixture_mode,(msg->msg[6]&0x20 ? 1:0),change,"Test fixture mode ON","Test fixture mode OFF");
       LOG_STATUS_CHANGE(astat->controlshutdown_mode,(msg->msg[6]&0x40 ? 1:0),change,"Control shutdown mode ON","Control shutdown mode OFF");
       LOG_STATUS_CHANGE(astat->cancel_window,(msg->msg[6]&0x80 ? 1:0),change,"Timing cancel window start","Timing cancel window end");
-      
+
       LOG_STATUS_CHANGE(astat->callback_in_progress,(msg->msg[7]&0x80 ? 1:0),change,"Call back in progress","Call back end");
-      
+
       LOG_STATUS_CHANGE(astat->phone_line_fault,(msg->msg[8]&0x01 ? 1:0),change,"Phone line Faulted","Phone line OK");
       LOG_STATUS_CHANGE(astat->voltage_present_int,(msg->msg[8]&0x02 ? 1:0),change,"Voltage present interrupt active","Voltage present interrupt inactive");
       LOG_STATUS_CHANGE(astat->house_phone_offhook,(msg->msg[8]&0x04 ? 1:0),change,"House phone OFF hook","House phone ON hook");
@@ -505,7 +505,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       /* LOG_STATUS_CHANGE(astat->offhook_memory,(msg->msg[8]&0x20 ? 1:0),change,"Last read was off hook","(Last read was off hook)"); */
       LOG_STATUS_CHANGE(astat->listenin_request,(msg->msg[8]&0x40 ? 1:0),change,"Listen in requested",NULL);
       LOG_STATUS_CHANGE(astat->listenin_trigger,(msg->msg[8]&0x80 ? 1:0),change,"Listen in trigger",NULL);
-      
+
       if (change) astat->last_updated=msg->r_time;
     }
     break;
@@ -516,14 +516,14 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       uchar house = msg->msg[0] + 'A';
       uchar unit = msg->msg[1] + 1;
       char *func;
-      
+
       switch (msg->msg[2]) {
 
-      case NX_X10_ALL_UNITS_OFF: 
+      case NX_X10_ALL_UNITS_OFF:
 	func="All units OFF"; break;
-      case NX_X10_ALL_LIGHTS_ON: 
+      case NX_X10_ALL_LIGHTS_ON:
 	func="All lights ON";break;
-      case NX_X10_ON: 
+      case NX_X10_ON:
 	func="On"; break;
       case NX_X10_OFF:
 	func="Off"; break;
@@ -533,7 +533,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	func="Bright"; break;
       case NX_X10_ALL_LIGHTS_OFF:
 	func="All lights OFF"; break;
-      default: 
+      default:
 	func="Unknown";
 
       }
@@ -555,7 +555,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 	  logmsg(2,"panel log size change: %d -> %d",astat->last_log,maxnum);
 	astat->last_log=maxnum;
       }
-      
+
       /* save log message */
       e=&astat->log[num];
       e->msgno=msg->msgnum;
@@ -568,7 +568,7 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
       e->day=msg->msg[6];
       e->hour=msg->msg[7];
       e->min=msg->msg[8];
-      
+
       logmsg((NX_IS_NONREPORTING_EVENT(e->type)?1:0),"%s",nx_log_event_str(e));
 
       if (config->trigger_enable &&
@@ -613,17 +613,17 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
 
   default:
-    if (verbose_mode) 
-      fprintf(stderr,"%s: unhandled message 0x%02x\n",nx_timestampstr(msg->r_time),msgnum); 
+    if (verbose_mode)
+      fprintf(stderr,"%s: unhandled message 0x%02x\n",nx_timestampstr(msg->r_time),msgnum);
     logmsg(1,"unhandled message 0x%02x",msgnum);
-    
+
   }
 
 }
 
 
 
-void process_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+void process_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 		     nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply)
 {
   nxmsg_t msgout,msgin;
@@ -695,7 +695,7 @@ void process_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 		    "Ignoring disabled command: Primary Keypad function with PIN command (0x3c)");
       return;
     }
-  } 
+  }
   else if (data[0] == NX_SEC_KEYPAD_FUNC) {
     if ((istatus->sup_cmd_msgs[3] & 0x40) == 0) {
       logmsg(0,"Keypad function ignored (partitions=0x%02x): %s",data[2],funcname);
@@ -703,7 +703,7 @@ void process_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 		    "Ignoring disabled command: Secondary Keypad Function with PIN (0x3e)");
       return;
     }
-  } 
+  }
 
 
   msgout.msgnum=data[0];
@@ -742,7 +742,7 @@ void process_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 
 
 
-void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 			       nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply)
 {
   nxmsg_t msgout,msgin;
@@ -780,7 +780,7 @@ void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg,
   /* we need to send the text in four 8 character blocks */
   for (loc=0;loc<4;loc++) {
     msgout.msg[2]=loc*8;
-    memcpy(&msgout.msg[3],data+2+(loc*8),8); 
+    memcpy(&msgout.msg[3],data+2+(loc*8),8);
 
 
     ret=nx_send_message(fd,protocol,&msgout,5,3,NX_POSITIVE_ACK,&msgin);
@@ -803,7 +803,7 @@ void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 	SET_MSG_REPLY(reply,msg,-1,0,"Keypad Terminal Mode Request not supported. Message not displayed.");
 	return;
       }
-      
+
       msgout.msgnum=NX_KEYPAD_TM_REQ;
       msgout.len=3;
       msgout.msg[0]=data[0];
@@ -815,15 +815,15 @@ void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg,
       } else {
 	SET_MSG_REPLY(reply,msg,2,0,"Keypad terminal mode failed (keypad=%d)",data[0]);
       }
-      
+
     }
   }
 
 }
 
 
-int read_program_data(int fd, int protocol, int device, int location, int mode, 
-		      char **datastr, uchar *datatype, uchar *datanibble) 
+int read_program_data(int fd, int protocol, int device, int location, int mode,
+		      char **datastr, uchar *datatype, uchar *datanibble)
 {
   nxmsg_t msgout,msgin,msgin2;
   char tmp[16];
@@ -843,20 +843,20 @@ int read_program_data(int fd, int protocol, int device, int location, int mode,
   msgout.msg[0]=device;
   msgout.msg[1]=(location >> 8) & 0x0f;
   msgout.msg[2]=(location & 0xff);
-  
-  
+
+
   ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PROG_DATA_REPLY,&msgin);
   if (ret==1 && msgin.msgnum == NX_PROG_DATA_REPLY) {
     nibble=((msgin.msg[1] & 0x10) == 0x10 ? 1 : 0);
     len=(msgin.msg[3] & 0x1f) + 1;
     type=(msgin.msg[3] >> 5 & 0x07);
-    if (nibble) 
+    if (nibble)
       size=len/2;
-    else 
+    else
       size=len;
-      
+
     if (size > 8) {
-      /* there is more data to be read, so request second segment */ 
+      /* there is more data to be read, so request second segment */
       msgout.msg[1] |= 0x40;
       ret=nx_send_message(fd,protocol,&msgout,5,3,NX_PROG_DATA_REPLY,&msgin2);
       if (!(ret==1 && msgin2.msgnum == NX_PROG_DATA_REPLY)) {
@@ -865,13 +865,13 @@ int read_program_data(int fd, int protocol, int device, int location, int mode,
       }
     }
   } else {
-    /* failed to get first data segment */ 
+    /* failed to get first data segment */
     return -1;
   }
 
 
 
-  /* reformat the program data */    
+  /* reformat the program data */
   if (type == 3) {
     buf[0]='"';
     buf[1]=0;
@@ -889,7 +889,7 @@ int read_program_data(int fd, int protocol, int device, int location, int mode,
       if (i<8) va=msgin.msg[4+i];
       else va=msgin2.msg[4+(i-8)];
     }
-    
+
     if (mode > 0) {
       switch (type) {
       case 0:
@@ -929,7 +929,7 @@ int read_program_data(int fd, int protocol, int device, int location, int mode,
     strlcat(buf,tmp,sizeof(buf));
   }
 
-  if (type == 3) 
+  if (type == 3)
     strlcat(buf,"\"",sizeof(buf));
 
   *datatype = type;
@@ -974,7 +974,7 @@ void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
     free(datastr);
   } else {
     SET_MSG_REPLY(reply,msg,1,0,
-		      "Program Data Request failed (device=%d,location=%d).",data[0],loc); 
+		      "Program Data Request failed (device=%d,location=%d).",data[0],loc);
   }
 
 }
@@ -1025,13 +1025,13 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 			  &datastr,&datatype,&datanibble);
     if (ret > 0) {
       datalen=ret;
-      
+
       logmsg(2,"Current Program data (dev=%03d,loc=%03d,len=%02d,type=%s): %s",
 	     data[0],loc,ret,nx_prog_datatype_str(datatype),datastr);
       free(datastr);
     } else {
       SET_MSG_REPLY(reply,msg,1,0,
-		    "Program Data Request failed (device=%d,location=%d)",data[0],loc); 
+		    "Program Data Request failed (device=%d,location=%d)",data[0],loc);
       return;
     }
 
@@ -1074,7 +1074,7 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
 
   memcpy(&msgout2,&msgout,sizeof(msgout2));
   msgout2.msg[1] |= 0x40;
-  
+
   for(i=0; i < datalen; (datanibble ? i+=2 : i++)) {
     uchar *p = (outcount < 8 ? &msgout.msg[4+outcount] : &msgout2.msg[4+(outcount-8)]);
     if (datanibble) {
@@ -1092,7 +1092,7 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
   if (ret == 1 && msgin.msgnum == NX_POSITIVE_ACK && loc != 910) {
     logmsg(3,"Program Data Command (#1) succeeded");
   } else {
-    if (loc == 910) { 
+    if (loc == 910) {
       SET_MSG_REPLY(reply,msg,0,0,"Factory Reset request sent (device=%d)",data[0]);
     } else  {
       SET_MSG_REPLY(reply,msg,3,0,
@@ -1132,14 +1132,14 @@ void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
     free(datastr);
   } else {
     SET_MSG_REPLY(reply,msg,5,0,
-		      "Programming complete, but Program Data Request failed (device=%d,location=%d)",data[0],loc); 
+		      "Programming complete, but Program Data Request failed (device=%d,location=%d)",data[0],loc);
     return;
   }
 
 }
 
 
-void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply)
 {
   nxmsg_t msgout,msgin;
@@ -1174,7 +1174,7 @@ void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 
 
 
-void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 			 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply)
 {
   nxmsg_t msgout,msgin;
@@ -1221,7 +1221,7 @@ int process_set_clock(int fd, int protocol, nx_system_status_t *astat, nx_interf
   nxmsg_t msgout,msgin;
   struct tm tt;
   time_t t;
-  int ret; 
+  int ret;
   int sec;
 
 
@@ -1273,7 +1273,7 @@ int process_set_clock(int fd, int protocol, nx_system_status_t *astat, nx_interf
     logmsg(0,"localtime_r() call failed");
     return 4;
   }
-  
+
   astat->last_timesync=t;
   return 0;
 }
@@ -1305,7 +1305,7 @@ int dump_log(int fd, int protocol, nx_system_status_t *astat, nx_interface_statu
       last=msgin.msg[1];
     } else {
       logmsg(0,"failed to get log entry: %d",i);
-    } 
+    }
     i++;
   }
 
@@ -1323,16 +1323,16 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
 
 
   /* default make sure all zones/partitions are disabled initially */
-  for (i=0;i<NX_PARTITIONS_MAX;i++) 
+  for (i=0;i<NX_PARTITIONS_MAX;i++)
     astat->partitions[i].valid=-1;
   for (i=0;i<NX_ZONES_MAX;i++) {
     astat->zones[i].valid=-1;
     astat->zones[i].last_updated=0;
     astat->zones[i].num=i+1;
   }
-  
 
-  astat->last_partition=((config->partitions > 0 && config->partitions < NX_PARTITIONS_MAX) ? 
+
+  astat->last_partition=((config->partitions > 0 && config->partitions < NX_PARTITIONS_MAX) ?
 			 config->partitions : NX_PARTITIONS_MAX);
 
   astat->statuscheck_interval = (config->statuscheck > 0 ? config->statuscheck : 30);
@@ -1397,7 +1397,7 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
   }
 
 
- 
+
   /* get zone info & names */
   astat->last_zone=((config->zones > 0 && config->zones <= NX_ZONES_MAX) ? config->zones : 48);
   logmsg(0,"Querying zone names and statuses...");
@@ -1413,14 +1413,14 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
       msgout.len=2;
       msgout.msg[0]=i;
       ret=nx_send_message(fd,protocol,&msgout,5,3,NX_ZONE_NAME_MSG,&msgin);
-      if (ret != 1 || msgin.msgnum != NX_ZONE_NAME_MSG) { 
+      if (ret != 1 || msgin.msgnum != NX_ZONE_NAME_MSG) {
 	logmsg(1,"failed to get name for zone %d (no NX-148E present?)",i+1);
 	snprintf(astat->zones[i].name,sizeof(astat->zones[i].name),"Zone %02d",i+1);
 	skip_zone_names++;
       } else {
 	process_message(&msgin,1,0,astat,istatus);
       }
-    } 
+    }
 
     /* get zone status */
     msgout.msgnum=NX_ZONE_STATUS_REQ;
@@ -1450,11 +1450,11 @@ int get_system_status(int fd, int protocol, nx_system_status_t *astat, nx_interf
 	   astat->zones[i].name,
 	   (astat->zones[i].bypass?"Bypassed":"Active"),
 	   (astat->zones[i].fault?"Fault":"OK"),
-	   (astat->zones[i].last_tripped > 0 ? timestampstr(astat->zones[i].last_tripped):"n/a")
+	   (astat->zones[i].last_tripped > 0 ? nx_timestampstr(astat->zones[i].last_tripped):"n/a")
 	   );
   }
 
-    
+
   return 0;
 }
 

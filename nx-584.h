@@ -1,7 +1,7 @@
 /* nx-584.h
  *
  * Library of functions to implement NX-584 Protocol.
- * 
+ *
  * Copyright (C) 2009-2016 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
@@ -16,8 +16,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
- * Boston, MA  02110-1301, USA. 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
  *
  */
 
@@ -30,8 +30,8 @@
 #define NX_MSG_MASK           0x3f
 #define NX_MSG_ACK_FLAG       0x80
 #define NX_IS_ACKMSG(n)  ((n & NX_MSG_ACK_FLAG) == NX_MSG_ACK_FLAG)
-#define NX_IS_NONREPORTING_EVENT(type)  ( (type & 0x80) == 0x80 ? 1 : 0 ) 
-#define NX_IS_REPORTING_EVENT(type)  ( (type & 0x80) == 0x80 ? 0 : 1 ) 
+#define NX_IS_NONREPORTING_EVENT(type)  ( (type & 0x80) == 0x80 ? 1 : 0 )
+#define NX_IS_REPORTING_EVENT(type)  ( (type & 0x80) == 0x80 ? 0 : 1 )
 #define NX_EVENT_TYPE_MASK    0x7f
 
 #define NX_PARTITIONS_MAX        8
@@ -40,7 +40,7 @@
 #define NX_MAX_LOG_ENTRIES       256
 #define NX_LOGICAL_LOCATION_MAX  4095
 #define NX_BUS_ADDRESS_MAX       255
-#define NX_NO_USER               98 
+#define NX_NO_USER               98
 
 /* module numbers */
 #define NX_MODULE_CONTROL_PANEL         8
@@ -77,7 +77,7 @@
 #define NX_X10_RCV_MSG        0x09
 #define NX_LOG_EVENT_MSG      0x0a
 #define NX_KEYPAD_MSG_RCVD    0x0b
-#define NX_PROG_DATA_REPLY    0x10 
+#define NX_PROG_DATA_REPLY    0x10
 #define NX_USER_INFO_REPLY    0x12
 #define NX_CMD_FAILED         0x1c
 #define NX_POSITIVE_ACK       0x1d
@@ -90,7 +90,7 @@
 #define NX_PART_STATUS_REQ    0x26
 #define NX_PART_SNAPSHOT_REQ  0x27
 #define NX_SYS_STATUS_REQ     0x28
-#define NX_X10_SEND_MSG       0x29 
+#define NX_X10_SEND_MSG       0x29
 #define NX_LOG_EVENT_REQ      0x2a
 #define NX_KEYPAD_MSG_SEND    0x2b
 #define NX_KEYPAD_TM_REQ      0x2c
@@ -111,7 +111,7 @@
 
 
 
-#define NX_KEYPAD_FUNC_NEED_PIN(mask)  ( (mask >> 8) == 0x3c ? 1 : 0 ) 
+#define NX_KEYPAD_FUNC_NEED_PIN(mask)  ( (mask >> 8) == 0x3c ? 1 : 0 )
 
 /* masks for "keypad" functions (command / function) */
 #define NX_KEYPAD_FUNC_SILENCE	       0x3c00
@@ -180,7 +180,7 @@
 #define NX_PROG_DATA_HEX               0x02
 #define NX_PROG_DATA_ASCII             0x03
 
- 
+
 
 typedef unsigned char uchar;
 typedef unsigned short int ushort;
