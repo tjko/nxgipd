@@ -1,7 +1,7 @@
 #########################################################################
-# $Id$ 
-# 
+#
 # Makefile for nxgipd
+#
 #
 
 Version = 1.1.1beta
@@ -13,6 +13,9 @@ SHELL = /bin/sh
 
 DEFS = @DEFS@
 DEFS += -DVERSION=\"$(Version)\" -DBUILDDATE=\"$(BuildDate)\"
+
+SYSTEMD_INIT_DIR = /etc/systemd/system
+SYSV_INIT_DIR = /etc/rc.d/init.d
 
 srcdir = @srcdir@
 VPATH = @srcdir@
@@ -37,13 +40,13 @@ mandir = $(prefix)/share/man
 
 
 
-CC        = @CC@ 
+CC        = @CC@
 XCPPFLAGS = @CPPFLAGS@
 CFLAGS    = -Wall @CFLAGS@ $(XCPPFLAGS) $(DEFS)
 LDFLAGS   = @LDFLAGS@
 LIBS      = @LIBS@
 
-#CFLAGS	 += -Wall -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 
+#CFLAGS	 += -Wall -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2
 
 
 # link against shared libmxml
@@ -61,7 +64,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 # should be no reason to modify lines below this
 #########################################################################
 
-DIRNAME = $(shell basename `pwd`) 
+DIRNAME = $(shell basename `pwd`)
 DISTNAME  = $(PKGNAME)-$(Version)
 
 
@@ -101,7 +104,7 @@ archive:
 	gzip -v -9 ../${DISTNAME}.tar
 
 
-install: all install.dirs install.man
+install: all install.dirs install.man install.init install.conf
 	$(INSTALL) -m 755 $(PKGNAME) $(INSTALL_ROOT)/$(sbindir)/$(PKGNAME)
 	$(INSTALL) -m 755 nxstat $(INSTALL_ROOT)/$(bindir)/nxstat
 	$(INSTALL) -m 755 nxcmd $(INSTALL_ROOT)/$(bindir)/nxcmd
@@ -120,7 +123,33 @@ install.dirs:
 	$(INSTALL) -d -m 755 $(INSTALL_ROOT)/$(bindir)
 	$(INSTALL) -d -m 755 $(INSTALL_ROOT)/$(sbindir)
 
+install.conf:
+	@if [ ! -e /etc/nxgipd.conf ]; then \
+		echo "Creating /etc/nxgipd.conf"; \
+		install -m 644 nxgipd.conf /etc/nxgipd.conf; \
+	fi
+
+install.init:
+	@echo -n "Detecting init system: "
+	@if [ -d $(SYSTEMD_INIT_DIR) ]; then \
+		echo "systemd"; \
+		if [ ! -e $(SYSTEMD_INIT_DIR)/nxgipd.service ]; then \
+			echo "Creating $(SYSTEMD_INIT_DIR)/nxgipd.service"; \
+			$(INSTALL) -m 644 contrib/nxgipd.service $(SYSTEMD_INIT_DIR)/nxgipd.service; \
+			systemctl daemon-reload; \
+		fi \
+	elif [ -d $(SYSV_INIT_DIR) ]; then \
+		echo "sysv"; \
+		if [ ! -e $(SYSV_INIT_DIR)/nxgipd ]; then \
+			echo "Creating $(SYSV_INIT_DIR)/nxgipd"; \
+			$(INSTALL) -m 755 contrib/nxgipd.initscript $(SYSV_INIT_DIR)/nxgipd; \
+		fi \
+	else \
+		echo "unknown"; \
+	fi
+
+
 # a tradition !
-love:	
+love:
 	@echo "Not War - Eh?"
 # eof
