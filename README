@@ -5,7 +5,7 @@ nxgipd is a monitoring daemon for UTC Interlogix/GE Security/Caddx NetworX
 series alarm systems that use the NetworX NX-584 protocol.
 
 Daemon process requires very minimal memory and CPU resource making it suitable
-to be run in on almost any hardware that runs Linux (or feel free to port 
+to be run in on almost any hardware that runs Linux (or feel free to port
 this to your favorite OS :-)
 nxgipd daemon process is meant to continuously monitor the alarm panel and
 log any activity into local log file and/or to syslog.
@@ -16,14 +16,14 @@ actions or monitor the alarm yourself.
 Command line tools nxstat and nxcmd allow real-time polling of the alarm
 status and interact with the alarm.
 
-NOTE! Before you can use this program you typically need to first install 
+NOTE! Before you can use this program you typically need to first install
 NX-584E (home automation) module or enable built-in serial port (NX-8E panel).
 If you don't know the program code (PIN) for your panel, you may need to get
 your alarm provider to do this for you.
 
-This program does not interfere with alarm monitoring services, so it can be 
+This program does not interfere with alarm monitoring services, so it can be
 used on systems monitored by a third-party (as additional means of monitoring
-the alarm system). 
+the alarm system).
 Alternatively, this program could be used to build "DIY" monitoring solution
 withouth requiring a third party monitoring provider.
 
@@ -34,7 +34,7 @@ SUPPORTED ALARM PANEL MODELS
 	NX-4 (V2)
 	NX-6 (V2)
 	NX-8 (V2)
-	NX-8E 
+	NX-8E
 	CS575 (Aritech)
 
 	Other panels that use same "NetworX NX-584 RS-232 Gateway
@@ -53,11 +53,11 @@ TESTED PLATFORMS
 
 INSTALLATION
 	Installation should be very straightforward, just unpack the
-	tar file, run configure,  make necessary changes to the Makefile,  
+	tar file, run configure,  make necessary changes to the Makefile,
 	and then compile the program. You may want do something like this:
 
-		tar xzvf nxgipd-1.1.0.tar.gz
-		cd nxgipd-1.1.0
+		tar xzvf nxgipd-1.1.1.tar.gz
+		cd nxgipd-1.1.1
 		./configure
 		make
 		make strip
@@ -69,15 +69,15 @@ INSTALLATION
 
 SERIAL INTERFACE CONFIGURATION
 
-       For this program to work, the NX-584 interface module (or the built-in 
-       serial port in NX-8E) must be configured first. For detailed 
+       For this program to work, the NX-584 interface module (or the built-in
+       serial port in NX-8E) must be configured first. For detailed
        instructions on how to do that, see the corresponding installation manuals.
 
        Recommended configuration settings:
 
        - Protocol: ASCII
 
-       - Speed: 9600 Baud 
+       - Speed: 9600 Baud
 
        - Enabled Transision Messages:
        	 	 * Interface Configuration Message
@@ -98,22 +98,23 @@ SERIAL INTERFACE CONFIGURATION
 		 * Send X-10 Message (OPTIONAL)
 		 * Log Event Request
 		 * Send Keypad Text Message (OPTIONAL)
-		 * System Status Request 
+		 * System Status Request
 		 * Program Data Request (OPTIONAL)
 		 * Program Data Command (OPTIONAL)
 		 * Set Clock / Calendar Command
 		 * Primary Keypad Function with PIN (OPTIONAL)
 		 * Secondary Keypad Function (OPTIONAL)
 		 * Zone Bypass Toggle (OPTIONAL)
-		 
+
 
 
 HISTORY
 	v1.1.1beta
+		- added serial port locking (on Linux)
 	        - updated to work with Mini-XML v3.x
 		- new -r option to nxstat command
 		- fix to binary protocol support
-		- minor bug fixes	
+		- minor bug fixes
         v1.1.0  - new configuration setting 'savestatus' to specify status file
                   saving interval
 		- SIGUSR1 signal can now be used to tell daemon to save status
@@ -126,7 +127,7 @@ HISTORY
 		- fix bug in IPC message sizing (nxcmd didn't work correctly
 		  on non x86_64 architectures)
 		- new config settings to set IPC memory segment and
-                  message queue user/group 
+                  message queue user/group
 		- new config setting 'maxprocesses' to prevent too many
 		  trigger scripts running simultaneously
 		- add --csv option to nxstat command
@@ -159,5 +160,4 @@ LATEST VERSION
 
 
 Timo <tjko@iki.fi>
-14-Sep-2015  $Id$
-
+27-Mar-2023

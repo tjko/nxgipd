@@ -30,10 +30,15 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#if defined(__linux__)
+#include <sys/ioctl.h>
+#include <sys/file.h>
+#endif
 #include "nxgipd.h"
 
 
 char *program_name = NULL;
+
 
 void die(char *format, ...)
 {
@@ -62,7 +67,6 @@ void warn(char *format, ...)
 }
 
 
-
 const char *timedeltastr(time_t delta)
 {
   static char buf[256];
@@ -84,8 +88,6 @@ const char *timedeltastr(time_t delta)
   buf[sizeof(buf)-1]=0;
   return buf;
 }
-
-
 
 
 void logmsg(int priority, char *format, ...)
@@ -136,8 +138,6 @@ void set_message_reply(nx_ipc_msg_reply_t *reply, const nx_ipc_msg_t *msg, int r
 }
 
 
-
-
 int openserialdevice(const char *device, const char *speed)
 {
   int fd;
@@ -146,20 +146,30 @@ int openserialdevice(const char *device, const char *speed)
   speed_t spd;
 
 
-  if (sscanf(speed,"%d",&baudrate) != 1) {
-    warn("invalid serial speed setting: %s",speed);
+  if (sscanf(speed,"%d", &baudrate) != 1) {
+    warn("invalid serial speed setting: %s", speed);
     return -1;
   }
 
   fd = open(device,O_RDWR|O_NONBLOCK|O_CLOEXEC|O_NOCTTY);
   if (fd < 0) {
-    warn("failed to open %s (errno=%d)\n",device,errno);
+    warn("failed to open %s (errno=%d)\n", device, errno);
     return -2;
   }
 
-  if (tcgetattr(fd,&t)) {
-    warn("tcgetattr() failed on %s\n",device);
-    return -3;
+#if defined(__linux__)
+  if (ioctl(fd, TIOCEXCL)) {
+	  warn("failed to set exclusive mode (TIOCEXCL) %s (errno=%d)\n", device, errno);
+  }
+  if (flock(fd, LOCK_EX | LOCK_NB)) {
+	  warn("serial port is currently locked: %s (errno=%d)\n", device, errno);
+	  return -3;
+  }
+#endif
+
+  if (tcgetattr(fd, &t)) {
+    warn("tcgetattr() failed on %s\n", device);
+    return -4;
   }
 
 
@@ -187,17 +197,16 @@ int openserialdevice(const char *device, const char *speed)
   }
 
   cfmakeraw(&t);
-  cfsetspeed(&t,spd);
+  cfsetspeed(&t, spd);
   t.c_cflag |= CLOCAL;
 
-  if (tcsetattr(fd,TCSANOW,&t)) {
-    warn("tcsetattr() failed on %s\n",device);
-    return -4;
+  if (tcsetattr(fd, TCSANOW, &t)) {
+    warn("tcsetattr() failed on %s\n", device);
+    return -5;
   }
 
   return fd;
 }
-
 
 
 /* eof :-) */
