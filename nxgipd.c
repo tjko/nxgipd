@@ -1,8 +1,8 @@
 /* nxgipd.c
  *
  * Monitoring daemon for GE Interlogix/Caddx NX Series Alarm Systems
- * 
- * Copyright (C) 2009-2015 Timo Kokkonen <tjko@iki.fi>
+ *
+ * Copyright (C) 2009-2023 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -16,8 +16,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
- * Boston, MA  02110-1301, USA. 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
  *
  * $Id$
  */
@@ -74,9 +74,9 @@ void signal_handler(int sig)
   /* handle daemon "crash" ... */
   if ( sig == SIGSEGV || sig == SIGBUS || sig == SIGFPE || sig == SIGILL ) {
     logmsg(0,"program crashed: signal=%d (%s)", sig, strsignal(sig));
-    if (shm != NULL) 
+    if (shm != NULL)
       release_shared_memory(shmid,shm);
-    if (msgid >= 0) 
+    if (msgid >= 0)
       release_message_queue(msgid);
 
     _exit(2); // avoid running any at_exit functions
@@ -85,7 +85,7 @@ void signal_handler(int sig)
 
   /* save status when SIGUSR1 is received... */
   if (sig == SIGUSR1) {
-    if (config->status_file && astat && 
+    if (config->status_file && astat &&
 	shm != NULL && shm->daemon_started > 0) {
       logmsg(0,"received SIGUSR1 signal, saving system status");
       r = save_status_xml(config->status_file, astat);
@@ -98,7 +98,7 @@ void signal_handler(int sig)
 
 
   /* abort on anything else except SIGCHLD */
-  if (sig != SIGCHLD) { 
+  if (sig != SIGCHLD) {
     logmsg(0,"program terminated: signal=%d (%s)", sig, strsignal(sig));
     exit(1); // we want at_exit functions to run...
   }
@@ -111,14 +111,14 @@ void signal_handler(int sig)
       int estatus = WEXITSTATUS(status);
       logmsg( (estatus==0?3:1),"child process exited: pid=%u, status=%d", pid, estatus);
       trigger_processes--;
-    } 
+    }
     else if (WIFSIGNALED(status)) {
       logmsg(1,"child process killed by signal: pid=%u, signal=%d (%s)",
 	     pid, WTERMSIG(status), strsignal(WTERMSIG(status)));
       trigger_processes--;
     }
     else if (WIFSTOPPED(status)) {
-      logmsg(1,"child process stopped: pid=%u, signal=%d (%s)", 
+      logmsg(1,"child process stopped: pid=%u, signal=%d (%s)",
 	     pid, WSTOPSIG(status), strsignal(WSTOPSIG(status)));
     }
     else if (WIFCONTINUED(status)) {
@@ -137,7 +137,7 @@ void exit_cleanup()
   logmsg(3,"exit_cleanup()");
 
   /* only attempt to save zone statuses if daemon is fully initialized... */
-  if (config->status_file && astat && 
+  if (config->status_file && astat &&
       shm != NULL && shm->daemon_started > 0) {
 
     int r = save_status_xml(config->status_file, astat);
@@ -146,9 +146,9 @@ void exit_cleanup()
     }
   }
 
-  if (shm != NULL) 
+  if (shm != NULL)
     release_shared_memory(shmid,shm);
-  if (msgid >= 0) 
+  if (msgid >= 0)
     release_message_queue(msgid);
 }
 
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 
   while ((opt=getopt_long(argc,argv,"vVhc:dp:l",long_options,&opt_index)) != -1) {
     switch (opt) {
-      
+
     case 'c':
       config_file=strdup(optarg);
       break;
@@ -211,10 +211,10 @@ int main(int argc, char **argv)
       break;
 
     case 'V':
-      fprintf(stderr,"%s v%s (%s)  %s\nCopyright (C) 2009-2015 Timo Kokkonen. All Rights Reserved.\n",
-	      PRGNAME,VERSION,BUILDDATE,HOST_TYPE);
+      fprintf(stderr,"%s v%s (%s)  %s\nCopyright (C) 2009-2023 Timo Kokkonen. All Rights Reserved.\n",
+	      PRGNAME, VERSION, BUILDDATE " " __TIME__, HOST_TYPE);
       exit(0);
-      
+
     case 's':
       if (sscanf(optarg,"%d,%d",&scan_node,&scan_loc)==2) {
 	scan_mode=1;
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
     case 'L':
       log_mode=2;
       break;
-      
+
     case 'h':
     default:
       fprintf(stderr,"Usage: %s [OPTIONS]\n\n",PRGNAME);
@@ -279,7 +279,7 @@ int main(int argc, char **argv)
   config->trigger_enable=0;
   if (config->alarm_program != NULL && strlen(config->alarm_program) > 0) {
     if (access(config->alarm_program, X_OK) != 0) {
-      warn("cannot execute alarm program (%s): %s (%d)", 
+      warn("cannot execute alarm program (%s): %s (%d)",
 	   config->alarm_program, strerror(errno),errno);
     } else {
       config->trigger_enable=1;
@@ -320,14 +320,14 @@ int main(int argc, char **argv)
     die("Failed to initialize IPC shared memory segment");
   istatus=&shm->intstatus;
   astat=&shm->alarmstatus;
-  if (verbose_mode) 
+  if (verbose_mode)
     printf("IPC shm: key=0x%08x id=%d\n",config->shmkey,shmid);
 
   /* initialize IPC message queue */
-  if ((msgid=init_message_queue(config->msgkey,config->msgmode)) < 0) 
+  if ((msgid=init_message_queue(config->msgkey,config->msgmode)) < 0)
     die("Failed to initialize IPC message queue");
   if (verbose_mode)
-    printf("IPC msg: key=0x%08x id=%d\n",config->msgkey,msgid); 
+    printf("IPC msg: key=0x%08x id=%d\n",config->msgkey,msgid);
 
   printf("Opening serial port: %s\n",config->serial_device);
   if ((fd = openserialdevice(config->serial_device,config->serial_speed)) < 0)
@@ -344,7 +344,7 @@ int main(int argc, char **argv)
 
   /* try to detect panel model */
   ret=detect_panel(fd,config->serial_protocol,astat,istatus,(scan_mode==2?1:0));
-  if (ret < 0) 
+  if (ret < 0)
     die("failed to estabilish communications with alarm panel: %d", ret);
   if (scan_mode==2)
     exit(0);
@@ -355,7 +355,7 @@ int main(int argc, char **argv)
   if (scan_mode > 0) {
     /* scan of device or bus requested */
 
-    if ( (istatus->sup_cmd_msgs[2] & 0x01) == 0 ) 
+    if ( (istatus->sup_cmd_msgs[2] & 0x01) == 0 )
       die("Program Data Request command not enabled.");
 
     if (scan_mode==1) {
@@ -383,9 +383,9 @@ int main(int argc, char **argv)
       printf("Daemon started (pid=%d)...\n",pid);
       _exit(0); /* avoid running atexit functions... */
     }
-    
+
     setsid();
-    
+
     if ((fdtmp = open("/dev/null",O_RDWR)) < 0) die("cannot open /dev/null");
     dup2(fdtmp,0);
     dup2(fdtmp,1);
@@ -422,7 +422,7 @@ int main(int argc, char **argv)
       printf("failed to get system status: %d\n",ret);
       if (retry++ >= 3) die("communication problem, giving up");
       sleep(1);
-    } else { 
+    } else {
       break;
     }
   }
@@ -457,7 +457,7 @@ int main(int argc, char **argv)
       /* attempt clock sync only when time is close to next full minute... */
       if (clock_sync_needed) {
 	struct tm tt;
-	
+
 	if (localtime_r(&t,&tt)) {
 	  if (tt.tm_sec > 56) {
 	    process_set_clock(fd,config->serial_protocol,astat,istatus);
@@ -487,8 +487,8 @@ int main(int argc, char **argv)
 
 
       /* update panel clock periodically (if enabled) */
-      if ( !clock_sync_needed && 
-	   (astat->timesync_interval > 0) && 
+      if ( !clock_sync_needed &&
+	   (astat->timesync_interval > 0) &&
 	   (astat->last_timesync + (astat->timesync_interval*3600) < t) ) {
 	clock_sync_needed=1;
 	logmsg(2,"clock sync needed");
@@ -518,7 +518,7 @@ int main(int argc, char **argv)
 
 	logmsg(3,"got IPC message: msgtype=%d msgid=%d,%d (%02x,%02x,%02x,...) = %d",
 	       ipcmsg.msgtype,ipcmsg.msgid[0],ipcmsg.msgid[1],ipcmsg.data[0],ipcmsg.data[1],ipcmsg.data[2],ret);
-	
+
 	switch (ipcmsg.msgtype) {
 	case NX_IPC_MSG_CMD:
 	  process_command(fd,config->serial_protocol,&ipcmsg,istatus,reply);
@@ -547,7 +547,7 @@ int main(int argc, char **argv)
 	  logmsg(0,"unknown IPC message received: %d",ipcmsg.msgtype);
 	  set_message_reply(reply,&ipcmsg,-1,"unknown IPC message received: %d",ipcmsg.msgtype);
 	}
-	
+
 	memset(ipcmsg.data,0,sizeof(ipcmsg.data)); // clear message data so PIN won't be left in memory
       }
 
@@ -561,4 +561,3 @@ int main(int argc, char **argv)
   close(fd);
   exit(0);
 }
-

@@ -1,9 +1,9 @@
 /* nxcmd.c
- * 
+ *
  * Tool to send commands to alarm panel via nxgipd daemon.
  * Loosely based on nxcmd created by David Whaley
- * 
- * Copyright (C) 2015 Timo Kokkonen <tjko@iki.fi>
+ *
+ * Copyright (C) 2009-2023 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,8 +17,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
- * Boston, MA  02110-1301, USA. 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
  *
  * $Id$
  */
@@ -73,7 +73,7 @@ int getpassword(const char *prompt, char **lineptr, size_t *n, FILE *stream)
 
   /* Turn echoing off, if reading from a terminal */
   if (istty) {
-    if (tcgetattr (fileno (stream), &old) != 0) 
+    if (tcgetattr (fileno (stream), &old) != 0)
       return -3;
     new = old;
     new.c_lflag &= ~ECHO;
@@ -82,13 +82,13 @@ int getpassword(const char *prompt, char **lineptr, size_t *n, FILE *stream)
   }
 
   /* Display prompt, if reading from a terminal */
-  if (istty && prompt) 
+  if (istty && prompt)
     printf("%s", prompt);
 
   /* Read the password. */
   nread = getline (lineptr, n, stream);
 
-  if (istty) 
+  if (istty)
     printf("\n");
 
   /* Restore terminal. */
@@ -98,7 +98,7 @@ int getpassword(const char *prompt, char **lineptr, size_t *n, FILE *stream)
 
   /* remove any trailing new-line */
   if (nread > 0) {
-    p=(*lineptr) + nread -1 ; 
+    p=(*lineptr) + nread -1 ;
     while (p >= *lineptr && (*p == 10 || *p == 13)) {
       *p--=0;
       nread--;
@@ -166,7 +166,7 @@ void parse_program_data(int datatype, char *progdata, int *datalen, int argc, ch
       for(i=0;i<argc;i++) {
 	if (sscanf(argv[i],"%x",&val) != 1)
 	  die("invalid hexadecimal data value '%s'",argv[i]);
-	if (val > 0xff) 
+	if (val > 0xff)
 	  die("too large hexadecimal value '%s'",argv[i]);
 	progdata[i]=val;
 	len++;
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 
   while ((opt=getopt_long(argc,argv,"t:nvVhc:p:",long_options,&opt_index)) != -1) {
     switch (opt) {
-      
+
     case 'c':
       config_file=strdup(optarg);
       break;
@@ -332,10 +332,10 @@ int main(int argc, char **argv)
 
     case 'V':
       fprintf(stderr,"%s v%s (%s)  %s\n"
-	      "Copyright (C) 2009-2015 Timo Kokkonen. All Rights Reserved.\n",
-	      program_name,VERSION,BUILDDATE,HOST_TYPE);
+	      "Copyright (C) 2009-2023 Timo Kokkonen. All Rights Reserved.\n",
+	      program_name, VERSION, BUILDDATE, HOST_TYPE);
       exit(0);
-      
+
     case 'h':
     default:
       print_usage();
@@ -354,7 +354,7 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  if (verbose_mode) 
+  if (verbose_mode)
     printf("Loading configuration...\n");
 
   if (load_config(config_file,config,0))
@@ -382,18 +382,18 @@ int main(int argc, char **argv)
 
   shmid = shmget(config->shmkey,sizeof(nx_shm_t),0);
   if (shmid < 0) {
-    if (errno==EINVAL) 
+    if (errno==EINVAL)
       die("version mismatch with daemon version (shared memory segment wrong size)");
     if (errno==ENOENT)
       die("cannot find share memory segment (server not running?)");
     die("shmget() failed: %s (%d)\n",strerror(errno),errno);
   }
   shm = shmat(shmid,NULL,SHM_RDONLY);
-  if (shm == (void*)-1)  
+  if (shm == (void*)-1)
     die("shmat() failed: %d (%s)\n",errno,strerror(errno));
 
   if (strcmp(shm->shmversion, SHMVERSION))
-    die("version mismatch with daemon (shared memory) version: %s vs %s", 
+    die("version mismatch with daemon (shared memory) version: %s vs %s",
 	SHMVERSION, shm->shmversion);
 
 
@@ -421,30 +421,30 @@ int main(int argc, char **argv)
   else if (!strcasecmp(cmd,"setclock")) msgtype=NX_IPC_SET_CLOCK;
   else if (!strcasecmp(cmd,"zonebypass")) {
     msgtype=NX_IPC_MSG_BYPASS;
-    if (args > 1) 
+    if (args > 1)
       sscanf(argv[optind+1],"%d",&zone);
-    if (zone < 1 || zone > NX_ZONES_MAX) 
+    if (zone < 1 || zone > NX_ZONES_MAX)
       die("zonebypass option requires zone argument");
-  } 
+  }
   else if (!strcasecmp(cmd,"getprogram")) {
     msgtype=NX_IPC_MSG_GET_PROG;
     if (args > 2) {
       sscanf(argv[optind+1],"%d",&device);
       sscanf(argv[optind+2],"%d",&location);
     }
-    if (device < 0 || device > NX_BUS_ADDRESS_MAX || 
-	location < 0 || location > NX_LOGICAL_LOCATION_MAX) 
+    if (device < 0 || device > NX_BUS_ADDRESS_MAX ||
+	location < 0 || location > NX_LOGICAL_LOCATION_MAX)
       die("getprogram option requires device and location arguments");
   }
   else if (!strcasecmp(cmd,"setprogram")) {
     msgtype=NX_IPC_MSG_SET_PROG;
-    if (args < 5) 
+    if (args < 5)
       die("missing arguments for setprogram option");
     sscanf(argv[optind+1],"%d",&device);
-    if (device < 0 || device > NX_BUS_ADDRESS_MAX) 
+    if (device < 0 || device > NX_BUS_ADDRESS_MAX)
       die("invalid device specified");
     sscanf(argv[optind+2],"%d",&location);
-    if (location <0 || location > NX_LOGICAL_LOCATION_MAX) 
+    if (location <0 || location > NX_LOGICAL_LOCATION_MAX)
       die("invalid location specified");
     if (!strncasecmp("binary",argv[optind+3],strlen(argv[optind+3]))) datatype=0;
     else if (!strncasecmp("decimal",argv[optind+3],strlen(argv[optind+3]))) datatype=1;
@@ -468,12 +468,12 @@ int main(int argc, char **argv)
       strlcpy(text1,argv[optind+2],sizeof(text1));
       strlcpy(text2,argv[optind+3],sizeof(text2));
       sscanf(argv[optind+4],"%d",&msgtime);
-    } 
-    else 
+    }
+    else
       die("invalid number or arguments for command 'message'");
-    if (keypad < 1 || keypad > 8) 
+    if (keypad < 1 || keypad > 8)
       die("invalid keypad number specified (valid values: 1..8)");
-    if (msgtime < 0 || msgtime > 255) 
+    if (msgtime < 0 || msgtime > 255)
       die("invalid display time specified (valid valued: 0..255)");
 
     for(i=0;i<MESSAGE_LINE_LEN;i++) {
@@ -483,11 +483,11 @@ int main(int argc, char **argv)
   }
   else if (!strcasecmp(cmd,"x10")) {
     msgtype=NX_IPC_X10_CMD;
-    if (args <= 3) 
+    if (args <= 3)
       die("x10 option requires house, unit, and function arguments");
     x10house=tolower(argv[optind+1][0]) - 'a';
     if (x10house < 0 || x10house > 15)
-      die("valid range for house code is: a..p"); 
+      die("valid range for house code is: a..p");
     if ( (sscanf(argv[optind+2],"%d",&x10unit) != 1) ||
 	 (x10unit < 1) || (x10unit > 16) )
       die("valid range for unit code is: 1..16");
@@ -525,19 +525,19 @@ int main(int argc, char **argv)
     if (NX_KEYPAD_FUNC_NEED_PIN(nxcmd)) {
       int offset = 3;
       int len = getpassword("PIN: ",&pin,&pinsize,stdin);
-      
-      if (len < 0) 
+
+      if (len < 0)
 	die("failed to get PIN (%d)", len);
       if (len != 4 && len != 6)
 	die("invalid PIN (PIN must be 4 or 6 digits long)");
-      
+
       /* pack PIN into format used by the alarm panel... */
       for (i=0;i<len;i+=2) {
 	if (!isdigit(pin[i]) || !isdigit(pin[i+1]))
 	  die("invalid PIN (PIN can only contain numbers)");
 	ipcmsg.data[offset++] = ( ((pin[i+1] - '0') << 4) | (pin[i] - '0') );
       }
-      
+
       /* clear PIN from memory */
       memset(pin,0,pinsize);
       free(pin);
@@ -616,7 +616,7 @@ int main(int argc, char **argv)
   if (nowait)
     return 0;
 
-  if (verbose_mode) 
+  if (verbose_mode)
     printf("Waiting for reply...\n");
 
   tm=time(NULL) + timeout;
@@ -637,4 +637,3 @@ int main(int argc, char **argv)
   die("timeout waiting response from server");
   return 0;
 }
-

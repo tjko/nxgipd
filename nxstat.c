@@ -2,7 +2,7 @@
  *
  * Tool to display alarm status by querying nxgipd daemon.
  *
- * Copyright (C) 2009-2016 Timo Kokkonen <tjko@iki.fi>
+ * Copyright (C) 2009-2023 Timo Kokkonen <tjko@iki.fi>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -683,7 +683,7 @@ int main(int argc, char **argv)
       printf("\nzone,num,name,mode,status,last_fault\n");
     } else {
       printf("Zone  Name              Mode      Status  Last Fault/Trouble\n"
-	     "----  ----------------  --------  ------  --------------------------------\n"
+	     "----  ----------------  --------  ------  ---------------------------------\n"
 	     );
     }
 
@@ -697,7 +697,7 @@ int main(int argc, char **argv)
       }
 
       if (display_all || zn->last_tripped > 0)
-	printf((csv_mode ? "zone,%d,%s,%s,%s,%s,%s\n" : "%02d    %-16s  %-8s  %-6s  %s %s\n"),
+	printf((csv_mode ? "zone,%d,%s,%s,%s,%s,%s\n" : "%02d    %-16s  %-8s  %-6s  %s %13s\n"),
 	       zn->num,
 	       zn->name,
 	       (zn->bypass?"Bypassed":"Active"),
