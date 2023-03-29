@@ -162,6 +162,7 @@ int openserialdevice(const char *device, const char *speed)
 	  warn("failed to set exclusive mode (TIOCEXCL) %s (errno=%d)\n", device, errno);
   }
   if (flock(fd, LOCK_EX | LOCK_NB)) {
+	  close(fd);
 	  warn("serial port is currently locked: %s (errno=%d)\n", device, errno);
 	  return -3;
   }

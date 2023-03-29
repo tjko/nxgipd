@@ -59,6 +59,8 @@ INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 
+INSTALL_ROOT ?= $(DESTDIR)
+
 @SET_MAKE@
 
 # should be no reason to modify lines below this
@@ -126,23 +128,23 @@ install.dirs:
 install.conf:
 	@if [ ! -e /etc/nxgipd.conf ]; then \
 		echo "Creating /etc/nxgipd.conf"; \
-		install -m 644 nxgipd.conf /etc/nxgipd.conf; \
+		install -m 644 nxgipd.conf $(INSTALL_ROOT)/etc/nxgipd.conf; \
 	fi
 
 install.init:
 	@echo -n "Detecting init system: "
 	@if [ -d $(SYSTEMD_INIT_DIR) ]; then \
 		echo "systemd"; \
-		if [ ! -e $(SYSTEMD_INIT_DIR)/nxgipd.service ]; then \
+		if [ ! -e $(INSTALL_ROOT)/$(SYSTEMD_INIT_DIR)/nxgipd.service ]; then \
 			echo "Creating $(SYSTEMD_INIT_DIR)/nxgipd.service"; \
-			$(INSTALL) -m 644 contrib/nxgipd.service $(SYSTEMD_INIT_DIR)/nxgipd.service; \
+			$(INSTALL) -m 644 contrib/nxgipd.service $(INSTALL_ROOT)/$(SYSTEMD_INIT_DIR)/nxgipd.service; \
 			systemctl daemon-reload; \
 		fi \
 	elif [ -d $(SYSV_INIT_DIR) ]; then \
 		echo "sysv"; \
-		if [ ! -e $(SYSV_INIT_DIR)/nxgipd ]; then \
+		if [ ! -e $(INSTALL_ROOT)/$(SYSV_INIT_DIR)/nxgipd ]; then \
 			echo "Creating $(SYSV_INIT_DIR)/nxgipd"; \
-			$(INSTALL) -m 755 contrib/nxgipd.initscript $(SYSV_INIT_DIR)/nxgipd; \
+			$(INSTALL) -m 755 contrib/nxgipd.initscript $(INSTALL_ROOT)/$(SYSV_INIT_DIR)/nxgipd; \
 		fi \
 	else \
 		echo "unknown"; \
