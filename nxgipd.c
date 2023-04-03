@@ -330,7 +330,7 @@ int main(int argc, char **argv)
     printf("IPC msg: key=0x%08x id=%d\n",config->msgkey,msgid);
 
   printf("Opening serial port: %s\n",config->serial_device);
-  if ((fd = openserialdevice(config->serial_device,config->serial_speed)) < 0)
+  if ((fd = openserialdevice(config->serial_device, config->serial_speed, config->serial_mode)) < 0)
     die("Failed to open serial port");
 
 

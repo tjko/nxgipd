@@ -129,6 +129,13 @@ int load_config(const char *configfile, nx_configuration_t *config, int logtest)
   if (!node) die("cannot find serial speed in configuration");
   config->serial_speed=strdup(mxmlGetOpaque(node));
 
+  node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","serial","mode");
+  if (node) {
+	  config->serial_mode=strdup(mxmlGetOpaque(node));
+  } else {
+	  config->serial_mode=strdup("8N1");
+  }
+
   node=search_xml_tree(configxml,MXML_OPAQUE,3,"configuration","serial","protocol");
   if (!node) die("cannot find serial protocol in configuration");
   if (strstr(mxmlGetOpaque(node),"ascii")) {

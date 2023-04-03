@@ -29,6 +29,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #if defined(__linux__)
 #include <sys/ioctl.h>
@@ -138,7 +139,7 @@ void set_message_reply(nx_ipc_msg_reply_t *reply, const nx_ipc_msg_t *msg, int r
 }
 
 
-int openserialdevice(const char *device, const char *speed)
+int openserialdevice(const char *device, const char *speed, const char *mode)
 {
   int fd;
   int baudrate;
@@ -200,6 +201,53 @@ int openserialdevice(const char *device, const char *speed)
   cfmakeraw(&t);
   cfsetspeed(&t, spd);
   t.c_cflag |= CLOCAL;
+
+  if (mode) {
+	  if (strlen(mode) >= 3) {
+		  warn("set mode: %s", mode);
+		  /* clear mode bits */
+		  t.c_cflag &= ~(CSIZE|PARENB|PARODD|CSTOPB);
+
+		  /* Data bits */
+		  switch(mode[0]) {
+		  case '5':
+			  t.c_cflag |= CS5;
+			  break;
+		  case '6':
+			  t.c_cflag |= CS6;
+			  break;
+		  case '7':
+			  t.c_cflag |= CS7;
+			  break;
+		  default:
+			  t.c_cflag |= CS8;
+			  break;
+		  }
+
+		  /* Parity */
+		  switch(mode[1]) {
+		  case 'O':
+			  t.c_cflag |= (PARENB|PARODD);
+			  break;
+		  case 'E':
+			  t.c_cflag |= PARENB;
+			  break;
+		  default:
+			  /* no parity.. */
+			  break;
+		  }
+
+		  /* Stop bits */
+		  switch(mode[2]) {
+		  case '2':
+			  t.c_cflag |= CSTOPB;
+			  break;
+		  default:
+			  /* 1 stop bit */
+			  break;
+		  }
+	  }
+  }
 
   if (tcsetattr(fd, TCSANOW, &t)) {
     warn("tcsetattr() failed on %s\n", device);

@@ -131,7 +131,7 @@ typedef struct nx_system_status {
   char ground_fault_memory;
   char fire_alarm_verification;
   char smoke_power_reset;
-  char line_power_50hz; 
+  char line_power_50hz;
   char high_voltage_charge;
   char comm_since_autotest;
   char powerup_delay;
@@ -153,7 +153,7 @@ typedef struct nx_system_status {
 
   nx_partition_status_t partitions[NX_PARTITIONS_MAX];
   int last_partition;
-  nx_zone_status_t zones[NX_ZONES_MAX]; 
+  nx_zone_status_t zones[NX_ZONES_MAX];
   int last_zone;
   nx_log_event_t log[NX_MAX_LOG_ENTRIES];
   int last_log;
@@ -176,6 +176,7 @@ typedef struct nx_system_status {
 typedef struct nx_configuration {
   char *serial_device;
   char *serial_speed;
+  char *serial_mode;
   uchar serial_protocol;
   int   zones;
   uchar partitions;
@@ -194,7 +195,7 @@ typedef struct nx_configuration {
   uchar trigger_partition;
   uchar trigger_zone;
   int   max_triggers;
-  
+
   uint  shmkey;
   int   shmmode;
   int   shm_uid;
@@ -213,7 +214,7 @@ typedef struct nx_configuration {
 typedef struct nx_ipc_msg {
   long msgtype;
   uint msgid[2];
-  uchar data[NX_IPC_MSG_DATA_LEN];  
+  uchar data[NX_IPC_MSG_DATA_LEN];
 } nx_ipc_msg_t;
 
 typedef struct nx_ipc_msg_reply {
@@ -240,7 +241,7 @@ typedef struct nx_shm {
   time_t                 last_updated;
   int                    comm_fail;
   nx_interface_status_t  intstatus;
-  nx_system_status_t     alarmstatus;  
+  nx_system_status_t     alarmstatus;
   time_t                 daemon_started;
   char                   daemon_version[32];
   int                    reply_index;
@@ -259,7 +260,7 @@ void die(char *format, ...);
 void warn(char *format, ...);
 void logmsg(int priority, char *format, ...);
 void set_message_reply(nx_ipc_msg_reply_t *reply, const nx_ipc_msg_t *msg, int result, const char *format, ...);
-int openserialdevice(const char *device, const char *speed);
+int openserialdevice(const char *device, const char *speed, const char *mode);
 const char *timedeltastr(time_t delta);
 
 /* configuration.c */
@@ -286,15 +287,15 @@ void process_message(nxmsg_t *msg, int init_mode, int verbose_mode, nx_system_st
 
 void process_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 		     nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
-void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+void process_keypadmsg_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 			       nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
-void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+void process_get_program_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
-void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+void process_set_program_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
-void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+void process_zone_bypass_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 				 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
-void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg, 
+void process_x10_command(int fd, int protocol, const nx_ipc_msg_t *msg,
 			 nx_interface_status_t *istatus, nx_ipc_msg_reply_t *reply);
 
 int process_set_clock(int fd, int protocol, nx_system_status_t *astat, nx_interface_status_t *istatus);
