@@ -1,5 +1,5 @@
-nxgipd v1.1.1beta
-=================
+nxgipd v1.1.1
+=============
 
 nxgipd is a monitoring daemon for UTC Interlogix/GE Security/Caddx NetworX
 series alarm systems that use the NetworX NX-584 protocol.
@@ -43,7 +43,7 @@ SUPPORTED ALARM PANEL MODELS
 
 
 REQUIREMENTS
-	Mini-XML library (libmxml) v2.6 or later version
+	Mini-XML library (libmxml) v3.0 or later version
 
 
 TESTED PLATFORMS
@@ -109,7 +109,8 @@ SERIAL INTERFACE CONFIGURATION
 
 
 HISTORY
-	v1.1.1beta
+	v1.1.1
+	        - support for non-standard serial modes (other than "8N1")
 		- added serial port locking (on Linux)
 	        - updated to work with Mini-XML v3.x
 		- new -r option to nxstat command
@@ -160,4 +161,4 @@ LATEST VERSION
 
 
 Timo <tjko@iki.fi>
-27-Mar-2023
+15-Apr-2023
